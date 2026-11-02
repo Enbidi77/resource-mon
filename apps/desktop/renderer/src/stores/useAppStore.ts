@@ -19,6 +19,8 @@ export type AppPage =
   | 'reports'
   | 'settings';
 
+export type AppTheme = 'dark' | 'light';
+
 interface ToastNotification {
   id: string;
   type: 'info' | 'success' | 'warning' | 'error';
@@ -27,6 +29,7 @@ interface ToastNotification {
 
 interface AppState {
   currentPage: AppPage;
+  theme: AppTheme;
   overview: SystemOverview | null;
   selectedProcess: ProcessInfo | null;
   selectedConnection: NetworkConnection | null;
@@ -37,6 +40,8 @@ interface AppState {
   toasts: ToastNotification[];
 
   setCurrentPage: (page: AppPage) => void;
+  setTheme: (theme: AppTheme) => void;
+  toggleTheme: () => void;
   setOverview: (overview: SystemOverview) => void;
   setSelectedProcess: (proc: ProcessInfo | null) => void;
   setSelectedConnection: (conn: NetworkConnection | null) => void;
@@ -48,8 +53,17 @@ interface AppState {
   removeToast: (id: string) => void;
 }
 
+const applyTheme = (theme: AppTheme) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(theme);
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+};
+
 export const useAppStore = create<AppState>((set) => ({
   currentPage: 'overview',
+  theme: 'dark',
   overview: null,
   selectedProcess: null,
   selectedConnection: null,
@@ -60,6 +74,16 @@ export const useAppStore = create<AppState>((set) => ({
   toasts: [],
 
   setCurrentPage: (page) => set({ currentPage: page }),
+  setTheme: (theme) => {
+    applyTheme(theme);
+    set({ theme });
+  },
+  toggleTheme: () =>
+    set((state) => {
+      const nextTheme: AppTheme = state.theme === 'dark' ? 'light' : 'dark';
+      applyTheme(nextTheme);
+      return { theme: nextTheme };
+    }),
   setOverview: (overview) => set({ overview }),
   setSelectedProcess: (proc) =>
     set({
@@ -95,4 +119,3 @@ export const useAppStore = create<AppState>((set) => ({
   removeToast: (id) =>
     set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
 }));
-

@@ -2,18 +2,20 @@ import React, { useState, useEffect } from 'react';
 import {
   ShieldAlert,
   ShieldCheck,
-  Shield,
   FileCheck,
-  AlertTriangle,
   RefreshCw,
-  FolderOpen,
-  Info,
   CheckCircle2,
 } from 'lucide-react';
 import type { SecurityPosture, SecurityAlert, FimScanResult } from '@sentinel/contracts';
 import { useAppStore } from '../stores/useAppStore';
 import { ArcGauge } from '../components/common/ArcGauge';
 import { formatTimestamp } from '@sentinel/shared';
+import {
+  GlassBadge,
+  GlassButton,
+  GlassCard,
+  GlassSurface,
+} from '../components/glass';
 
 export const SecurityPage: React.FC = () => {
   const { setSelectedAlert, addToast } = useAppStore();
@@ -64,32 +66,33 @@ export const SecurityPage: React.FC = () => {
   return (
     <div className="p-6 space-y-6 overflow-y-auto h-full select-none">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h2 className="text-lg font-bold text-white font-mono flex items-center gap-2">
+          <h2 className="text-lg font-bold text-[var(--text-primary)] font-mono flex items-center gap-2">
             <ShieldAlert className="w-5 h-5 text-red-400" />
             Host Defensive Security Center
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-[var(--text-secondary)] mt-0.5">
             Defensive posture assessment, process anomaly detection, and File Integrity Monitoring (FIM)
           </p>
         </div>
 
-        <button
+        <GlassButton
+          variant="glass"
+          size="sm"
           onClick={fetchSecurityData}
-          disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 font-mono transition-colors"
+          loading={loading}
+          icon={<RefreshCw className="w-3.5 h-3.5 text-red-400" />}
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-red-400' : ''}`} />
-          <span>Refresh Posture</span>
-        </button>
+          Refresh Posture
+        </GlassButton>
       </div>
 
       {/* Row 1: Posture Gauges & Controls */}
       <div className="grid grid-cols-12 gap-6">
         {/* Posture Score */}
-        <div className="col-span-4 glass-card p-5 rounded-2xl border border-white/5 flex flex-col justify-between items-center text-center">
-          <div className="w-full text-left text-xs font-mono font-bold text-slate-300 uppercase tracking-wider mb-2">
+        <GlassCard className="col-span-12 lg:col-span-4 p-5 flex flex-col justify-between items-center text-center">
+          <div className="w-full text-left text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider mb-2">
             Host Defensive Posture
           </div>
 
@@ -100,147 +103,150 @@ export const SecurityPage: React.FC = () => {
             size={220}
           />
 
-          <div className="w-full text-xs font-mono text-slate-400 pt-3 border-t border-white/5 flex justify-between">
+          <div className="w-full text-xs font-mono text-[var(--text-secondary)] pt-3 border-t border-[var(--glass-border-subtle)] flex justify-between items-center">
             <span>Privilege Elevation:</span>
-            <span className={posture?.isElevatedAdmin ? 'text-emerald-400' : 'text-slate-400'}>
+            <GlassBadge
+              variant={posture?.isElevatedAdmin ? 'success' : 'default'}
+              size="sm"
+              dot
+            >
               {posture?.isElevatedAdmin ? 'ADMIN' : 'USER'}
-            </span>
+            </GlassBadge>
           </div>
-        </div>
+        </GlassCard>
 
         {/* Protection Services Status */}
-        <div className="col-span-8 glass-card p-5 rounded-2xl border border-white/5 space-y-3">
-          <div className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider border-b border-white/5 pb-2">
+        <GlassCard className="col-span-12 lg:col-span-8 p-5 space-y-3">
+          <div className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider border-b border-[var(--glass-border-subtle)] pb-2">
             Host Security Control Subsystems
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-white/5 flex justify-between items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex justify-between items-center">
               <div>
-                <div className="text-xs font-bold text-white font-mono">Antivirus Engine</div>
-                <div className="text-[11px] text-slate-400">{posture?.antivirusName || 'Windows Defender'}</div>
+                <div className="text-xs font-bold text-[var(--text-primary)] font-mono">Antivirus Engine</div>
+                <div className="text-[11px] text-[var(--text-secondary)]">{posture?.antivirusName || 'Windows Defender'}</div>
               </div>
-              <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                <CheckCircle2 className="w-3 h-3" />
-                <span>Active</span>
-              </div>
-            </div>
+              <GlassBadge variant="success" size="sm" dot>
+                Active
+              </GlassBadge>
+            </GlassSurface>
 
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-white/5 flex justify-between items-center">
+            <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex justify-between items-center">
               <div>
-                <div className="text-xs font-bold text-white font-mono">Windows Firewall</div>
-                <div className="text-[11px] text-slate-400">All Profiles Protected</div>
+                <div className="text-xs font-bold text-[var(--text-primary)] font-mono">Windows Firewall</div>
+                <div className="text-[11px] text-[var(--text-secondary)]">All Profiles Protected</div>
               </div>
-              <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                <CheckCircle2 className="w-3 h-3" />
-                <span>Engaged</span>
-              </div>
-            </div>
+              <GlassBadge variant="success" size="sm" dot>
+                Engaged
+              </GlassBadge>
+            </GlassSurface>
 
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-white/5 flex justify-between items-center">
+            <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex justify-between items-center">
               <div>
-                <div className="text-xs font-bold text-white font-mono">User Account Control (UAC)</div>
-                <div className="text-[11px] text-slate-400">Elevation Prompting</div>
+                <div className="text-xs font-bold text-[var(--text-primary)] font-mono">User Account Control (UAC)</div>
+                <div className="text-[11px] text-[var(--text-secondary)]">Elevation Prompting</div>
               </div>
-              <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                <CheckCircle2 className="w-3 h-3" />
-                <span>Enabled</span>
-              </div>
-            </div>
+              <GlassBadge variant="success" size="sm" dot>
+                Enabled
+              </GlassBadge>
+            </GlassSurface>
 
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-white/5 flex justify-between items-center">
+            <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex justify-between items-center">
               <div>
-                <div className="text-xs font-bold text-white font-mono">UEFI Secure Boot</div>
-                <div className="text-[11px] text-slate-400">Firmware Signature Enforced</div>
+                <div className="text-xs font-bold text-[var(--text-primary)] font-mono">UEFI Secure Boot</div>
+                <div className="text-[11px] text-[var(--text-secondary)]">Firmware Signature Enforced</div>
               </div>
-              <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                <CheckCircle2 className="w-3 h-3" />
-                <span>Secure</span>
-              </div>
-            </div>
+              <GlassBadge variant="success" size="sm" dot>
+                Secure
+              </GlassBadge>
+            </GlassSurface>
           </div>
-        </div>
+        </GlassCard>
       </div>
 
       {/* Row 2: File Integrity Monitoring (FIM) */}
-      <div className="glass-card p-5 rounded-2xl border border-white/5 space-y-4">
-        <div className="flex justify-between items-center">
+      <GlassCard className="p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
-            <div className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <div className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
               <FileCheck className="w-4 h-4 text-cyan-400" />
               File Integrity Monitoring (FIM) & SHA-256 Baselines
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">
+            <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
               Monitors critical driver configurations and binary directories for unauthorized alterations
             </div>
           </div>
 
-          <button
+          <GlassButton
+            variant="glass"
+            size="sm"
             onClick={handleRunFim}
-            disabled={isScanningFim}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-mono border border-cyan-500/30 transition-colors disabled:opacity-50"
+            loading={isScanningFim}
+            icon={<RefreshCw className="w-3.5 h-3.5 text-cyan-400" />}
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isScanningFim ? 'animate-spin' : ''}`} />
-            <span>{isScanningFim ? 'Scanning Baseline...' : 'Run FIM Integrity Check'}</span>
-          </button>
+            {isScanningFim ? 'Scanning Baseline...' : 'Run FIM Integrity Check'}
+          </GlassButton>
         </div>
 
         {fimResult && (
-          <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/5 space-y-2 text-xs font-mono">
-            <div className="flex justify-between text-slate-300">
+          <GlassSurface elevation="subtle" rounded="xl" className="p-3.5 space-y-2 text-xs font-mono">
+            <div className="flex justify-between text-[var(--text-primary)]">
               <span>Directory: {fimResult.directory}</span>
-              <span className="text-cyan-400">Scanned Files: {fimResult.scannedFiles}</span>
+              <span className="text-cyan-400 font-semibold">Scanned Files: {fimResult.scannedFiles}</span>
             </div>
             <div className="flex gap-4 text-[11px]">
               <span className="text-emerald-400">Modified: {fimResult.modifiedCount}</span>
               <span className="text-blue-400">Added: {fimResult.addedCount}</span>
               <span className="text-red-400">Deleted: {fimResult.deletedCount}</span>
             </div>
-          </div>
+          </GlassSurface>
         )}
-      </div>
+      </GlassCard>
 
-      {/* Row 3: Security Findings Table */}
-      <div className="glass-card rounded-2xl border border-white/5 p-5 space-y-3">
-        <div className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
+      {/* Row 3: Security Findings Feed */}
+      <GlassCard className="p-5 space-y-3">
+        <div className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider">
           Security Alert Feed & Evidence ({alerts.length})
         </div>
 
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {alerts.map((alert) => (
-            <div
+            <GlassSurface
               key={alert.id}
+              elevation="subtle"
+              rounded="xl"
               onClick={() => setSelectedAlert(alert)}
-              className="p-3 rounded-xl bg-slate-900/60 hover:bg-white/[0.04] border border-white/5 flex items-center justify-between cursor-pointer transition-colors"
+              className="p-3 flex items-center justify-between cursor-pointer hover:border-red-500/30 transition-all"
             >
               <div className="flex items-center gap-3">
-                <span
-                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                <GlassBadge
+                  variant={
                     alert.severity === 'CRITICAL'
-                      ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                      ? 'danger'
                       : alert.severity === 'HIGH'
-                      ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                      : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                  }`}
+                      ? 'warning'
+                      : 'info'
+                  }
+                  size="sm"
                 >
                   {alert.severity}
-                </span>
+                </GlassBadge>
 
                 <div>
-                  <div className="text-xs font-bold text-white font-mono">{alert.title}</div>
-                  <div className="text-[11px] text-slate-400">{alert.description}</div>
+                  <div className="text-xs font-bold text-[var(--text-primary)] font-mono">{alert.title}</div>
+                  <div className="text-[11px] text-[var(--text-secondary)]">{alert.description}</div>
                 </div>
               </div>
 
-              <div className="text-right text-[11px] font-mono text-slate-500">
+              <div className="text-right text-[11px] font-mono text-[var(--text-tertiary)]">
                 <div>{formatTimestamp(alert.timestamp)}</div>
-                <div className="text-slate-400 text-[10px]">{alert.ruleId}</div>
+                <div className="text-[var(--text-secondary)] text-[10px]">{alert.ruleId}</div>
               </div>
-            </div>
+            </GlassSurface>
           ))}
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 };
-

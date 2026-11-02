@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
-import { FileDown, Download, Copy, CheckCircle2, Shield } from 'lucide-react';
+import { FileDown, Download } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 import type { GeneratedReport, ReportConfig } from '@sentinel/contracts';
+import {
+  GlassButton,
+  GlassCard,
+  GlassInput,
+  GlassSegmentedControl,
+  GlassSurface,
+} from '../components/glass';
 
 export const ReportsPage: React.FC = () => {
   const { addToast } = useAppStore();
@@ -50,54 +57,49 @@ export const ReportsPage: React.FC = () => {
   return (
     <div className="p-6 space-y-6 overflow-y-auto h-full select-none">
       <div>
-        <h2 className="text-lg font-bold text-white font-mono flex items-center gap-2">
+        <h2 className="text-lg font-bold text-[var(--text-primary)] font-mono flex items-center gap-2">
           <FileDown className="w-5 h-5 text-cyan-400" />
           Audit Reports & Compliance Export
         </h2>
-        <p className="text-xs text-slate-400 mt-0.5">
+        <p className="text-xs text-[var(--text-secondary)] mt-0.5">
           Generate comprehensive host health, process inventories, network attributions, and security audits
         </p>
       </div>
 
       <div className="grid grid-cols-12 gap-6">
         {/* Left: Configuration Form */}
-        <div className="col-span-5 glass-card p-5 rounded-2xl border border-white/5 space-y-4">
-          <div className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider border-b border-white/5 pb-2">
+        <GlassCard className="col-span-12 lg:col-span-5 p-5 space-y-4">
+          <div className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider border-b border-[var(--glass-border-subtle)] pb-2">
             Report Parameters
           </div>
 
-          <div className="space-y-3 text-xs font-mono">
+          <div className="space-y-3.5 text-xs font-mono">
             <div>
-              <label className="text-slate-400 block mb-1">Report Title</label>
-              <input
-                type="text"
+              <label className="text-[var(--text-secondary)] block mb-1.5">Report Title</label>
+              <GlassInput
                 value={config.title}
                 onChange={(e) => setConfig({ ...config, title: e.target.value })}
-                className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-white outline-none"
+                inputSize="sm"
               />
             </div>
 
             <div>
-              <label className="text-slate-400 block mb-1">Export Format</label>
-              <div className="flex gap-2">
-                {(['html', 'json', 'csv'] as const).map((fmt) => (
-                  <button
-                    key={fmt}
-                    onClick={() => setConfig({ ...config, format: fmt })}
-                    className={`flex-1 py-1.5 rounded-lg uppercase tracking-wider font-bold text-[10px] transition-colors ${
-                      config.format === fmt
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                        : 'bg-slate-900 text-slate-400 border border-white/5'
-                    }`}
-                  >
-                    {fmt}
-                  </button>
-                ))}
-              </div>
+              <label className="text-[var(--text-secondary)] block mb-1.5">Export Format</label>
+              <GlassSegmentedControl
+                options={[
+                  { value: 'html', label: 'HTML' },
+                  { value: 'json', label: 'JSON' },
+                  { value: 'csv', label: 'CSV' },
+                ]}
+                value={config.format}
+                onChange={(fmt) => setConfig({ ...config, format: fmt as 'html' | 'json' | 'csv' })}
+                size="sm"
+                className="w-full justify-between"
+              />
             </div>
 
-            <div className="pt-2 border-t border-white/[0.04] space-y-2">
-              <label className="text-slate-400 block">Included Sections</label>
+            <div className="pt-2 border-t border-[var(--glass-border-subtle)] space-y-2">
+              <label className="text-[var(--text-secondary)] block font-semibold">Included Sections</label>
               {[
                 { key: 'includeMetrics', label: 'System Overview & Telemetry' },
                 { key: 'includeProcesses', label: 'Process Inventory & Hashes' },
@@ -105,74 +107,76 @@ export const ReportsPage: React.FC = () => {
                 { key: 'includeSecurity', label: 'Security Alerts & Posture Findings' },
                 { key: 'includeHardware', label: 'Hardware & BIOS Inventory' },
               ].map(({ key, label }) => (
-                <label key={key} className="flex items-center gap-2 text-slate-300 cursor-pointer">
+                <label key={key} className="flex items-center gap-2 text-[var(--text-primary)] cursor-pointer py-0.5">
                   <input
                     type="checkbox"
                     checked={(config as any)[key]}
                     onChange={(e) => setConfig({ ...config, [key]: e.target.checked })}
-                    className="accent-cyan-400 rounded"
+                    className="accent-cyan-400 rounded w-4 h-4 cursor-pointer"
                   />
                   <span>{label}</span>
                 </label>
               ))}
             </div>
 
-            <button
+            <GlassButton
+              variant="primary"
+              size="md"
               onClick={handleGenerate}
-              disabled={generating}
-              className="w-full py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition-colors disabled:opacity-50 mt-4 flex items-center justify-center gap-2"
+              loading={generating}
+              icon={<FileDown className="w-4 h-4" />}
+              className="w-full mt-4"
             >
-              <FileDown className="w-4 h-4" />
-              <span>{generating ? 'Compiling Report...' : 'Compile Audit Report'}</span>
-            </button>
+              {generating ? 'Compiling Report...' : 'Compile Audit Report'}
+            </GlassButton>
           </div>
-        </div>
+        </GlassCard>
 
         {/* Right: Generated Output Preview */}
-        <div className="col-span-7 glass-card p-5 rounded-2xl border border-white/5 flex flex-col justify-between">
+        <GlassCard className="col-span-12 lg:col-span-7 p-5 flex flex-col justify-between">
           <div>
-            <div className="flex justify-between items-center border-b border-white/5 pb-2 mb-3">
-              <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
+            <div className="flex justify-between items-center border-b border-[var(--glass-border-subtle)] pb-2 mb-3">
+              <span className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider">
                 Report Preview & Artifact
               </span>
               {generatedReport && (
-                <button
+                <GlassButton
+                  variant="glass"
+                  size="xs"
                   onClick={handleDownload}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-500/20 text-emerald-300 text-xs font-mono border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors"
+                  icon={<Download className="w-3.5 h-3.5 text-emerald-400" />}
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download {generatedReport.format.toUpperCase()}</span>
-                </button>
+                  Download {generatedReport.format.toUpperCase()}
+                </GlassButton>
               )}
             </div>
 
             {generatedReport ? (
               <div className="space-y-3">
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-white/5 text-xs font-mono space-y-1">
+                <GlassSurface elevation="subtle" rounded="xl" className="p-3 text-xs font-mono space-y-1">
                   <div className="text-cyan-400 font-bold">{generatedReport.filename}</div>
-                  <div className="text-slate-500">
+                  <div className="text-[var(--text-tertiary)]">
                     Generated: {generatedReport.generatedAt} • Size: {generatedReport.sizeBytes} bytes
                   </div>
-                </div>
+                </GlassSurface>
 
-                <div className="p-3 rounded-xl bg-slate-950/80 border border-white/5 font-mono text-[11px] text-slate-400 max-h-72 overflow-y-auto whitespace-pre-wrap select-text">
+                <div className="p-3 rounded-xl bg-black/20 dark:bg-black/40 border border-[var(--glass-border-subtle)] font-mono text-[11px] text-[var(--text-secondary)] max-h-72 overflow-y-auto whitespace-pre-wrap select-text">
                   {generatedReport.content.slice(0, 1500)}
                   {generatedReport.content.length > 1500 ? '\n... (truncated for preview)' : ''}
                 </div>
               </div>
             ) : (
-              <div className="p-16 text-center text-xs text-slate-500 font-mono">
+              <div className="p-16 text-center text-xs text-[var(--text-tertiary)] font-mono">
                 Configure parameters and click "Compile Audit Report" to generate an auditable workstation document.
               </div>
             )}
           </div>
 
-          <div className="text-[11px] text-slate-500 font-mono pt-3 border-t border-white/5">
+          <div className="text-[11px] text-[var(--text-tertiary)] font-mono pt-3 border-t border-[var(--glass-border-subtle)]">
             Report conforms to defensive host compliance logging standards.
           </div>
-        </div>
+        </GlassCard>
       </div>
     </div>
   );
 };
-

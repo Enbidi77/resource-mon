@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, Search, Minus, Square, Copy, X, Terminal, Cpu } from 'lucide-react';
+import { Shield, Search, Minus, Square, Copy, X, Cpu, Sun, Moon } from 'lucide-react';
 import { useAppStore } from '../../stores/useAppStore';
+import { GlassBadge, GlassButton } from '../glass';
 
 export const TitleBar: React.FC = () => {
-  const { overview, setIsCommandPaletteOpen } = useAppStore();
+  const { overview, setIsCommandPaletteOpen, theme, toggleTheme } = useAppStore();
   const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
@@ -20,80 +21,91 @@ export const TitleBar: React.FC = () => {
   const handleClose = () => window.sentinelAPI?.closeWindow();
 
   return (
-    <header className="titlebar-drag-region h-11 w-full bg-[#0a0d14]/90 backdrop-blur-md border-b border-white/[0.08] flex items-center justify-between px-3 z-50 select-none">
-      {/* Left: Branding & Hostname */}
+    <header className="titlebar-drag-region h-12 w-full bg-[var(--glass-surface)] backdrop-blur-2xl backdrop-saturate-180 border-b border-[var(--glass-border)] flex items-center justify-between px-3.5 z-50 select-none shadow-[var(--glass-specular)]">
+      {/* Left: Branding & Host Info */}
       <div className="flex items-center gap-3 no-drag">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+        <div className="flex items-center gap-2.5">
+          <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/25 border border-white/20">
             <Shield className="w-3.5 h-3.5 text-white" />
           </div>
-          <span className="font-bold text-sm tracking-wide text-white font-mono">
+          <span className="font-bold text-xs tracking-wider text-[var(--text-primary)] font-mono">
             SENTINEL<span className="text-cyan-400">.DESKTOP</span>
           </span>
         </div>
 
-        <div className="h-4 w-px bg-white/10" />
+        <div className="h-4 w-px bg-[var(--glass-border)]" />
 
         {/* Machine Name Badge */}
-        <div className="flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-slate-800/80 border border-white/5 text-xs text-slate-300">
+        <GlassBadge variant="default" size="sm" className="hidden sm:inline-flex items-center gap-1.5 font-mono">
           <Cpu className="w-3 h-3 text-cyan-400" />
-          <span className="font-mono">{overview?.hostname || 'LOCAL-NODE'}</span>
-          <span className="text-slate-500">•</span>
-          <span className="text-slate-400">{overview?.osName?.split(' ')[0] || 'Windows'}</span>
-        </div>
+          <span>{overview?.hostname || 'LOCAL-NODE'}</span>
+          <span className="text-[var(--text-tertiary)]">•</span>
+          <span className="text-[var(--text-secondary)]">{overview?.osName?.split(' ')[0] || 'Windows'}</span>
+        </GlassBadge>
 
         {/* Privilege Indicator */}
-        <div
-          className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase ${
-            overview?.isElevated
-              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-              : 'bg-slate-700/40 text-slate-400 border border-white/5'
-          }`}
+        <GlassBadge
+          variant={overview?.isElevated ? 'success' : 'default'}
+          size="sm"
+          dot
+          pulsing={Boolean(overview?.isElevated)}
         >
-          <span className={`w-1.5 h-1.5 rounded-full ${overview?.isElevated ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} />
-          {overview?.isElevated ? 'ELEVATED (ADMIN)' : 'USER'}
-        </div>
+          {overview?.isElevated ? 'ELEVATED' : 'USER'}
+        </GlassBadge>
       </div>
 
-      {/* Center: Command Palette Trigger */}
+      {/* Center: Search / Command Palette Floating Pill */}
       <button
         onClick={() => setIsCommandPaletteOpen(true)}
-        className="no-drag flex items-center gap-2 px-3 py-1 rounded-md bg-slate-900/80 hover:bg-slate-800 border border-white/10 text-xs text-slate-400 transition-colors w-64 justify-between"
+        className="no-drag flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-[var(--glass-surface-subtle)] hover:bg-[var(--glass-surface-elevated)] border border-[var(--glass-border)] hover:border-[var(--glass-border-hover)] text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all duration-200 w-64 md:w-80 justify-between shadow-sm shadow-[var(--glass-specular)] cursor-pointer group"
       >
-        <span className="flex items-center gap-2">
-          <Search className="w-3.5 h-3.5 text-slate-400" />
-          <span>Search processes, ports, alerts...</span>
+        <span className="flex items-center gap-2 truncate">
+          <Search className="w-3.5 h-3.5 text-[var(--text-tertiary)] group-hover:text-cyan-400 transition-colors" />
+          <span className="truncate">Search commands, processes, ports...</span>
         </span>
-        <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-mono border border-white/10">
+        <kbd className="px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/10 text-[10px] font-mono border border-[var(--glass-border-subtle)] text-[var(--text-secondary)]">
           Ctrl K
         </kbd>
       </button>
 
-      {/* Right: Window Controls */}
-      <div className="flex items-center gap-1 no-drag">
+      {/* Right: Theme Toggle & Window Controls */}
+      <div className="flex items-center gap-2 no-drag">
+        {/* Light / Dark Mode Liquid Glass Toggle */}
         <button
-          onClick={handleMinimize}
-          className="w-8 h-8 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-          title="Minimize"
+          onClick={toggleTheme}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-surface-elevated)] border border-transparent hover:border-[var(--glass-border)] transition-all cursor-pointer"
+          title={`Switch to ${theme === 'dark' ? 'Light Frosted' : 'Dark Liquid'} Glass`}
         >
-          <Minus className="w-4 h-4" />
+          {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-300" /> : <Moon className="w-3.5 h-3.5 text-blue-500" />}
         </button>
-        <button
-          onClick={handleMaximize}
-          className="w-8 h-8 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-          title={isMaximized ? 'Restore' : 'Maximize'}
-        >
-          {isMaximized ? <Copy className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
-        </button>
-        <button
-          onClick={handleClose}
-          className="w-8 h-8 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-red-500/80 transition-colors"
-          title="Close"
-        >
-          <X className="w-4 h-4" />
-        </button>
+
+        <div className="h-4 w-px bg-[var(--glass-border)]" />
+
+        {/* Window Controls */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleMinimize}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/10 transition-colors cursor-pointer"
+            title="Minimize"
+          >
+            <Minus className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={handleMaximize}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/10 transition-colors cursor-pointer"
+            title={isMaximized ? 'Restore' : 'Maximize'}
+          >
+            {isMaximized ? <Copy className="w-3 h-3" /> : <Square className="w-3 h-3" />}
+          </button>
+          <button
+            onClick={handleClose}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:text-white hover:bg-red-500/80 transition-colors cursor-pointer"
+            title="Close"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </header>
   );
 };
-

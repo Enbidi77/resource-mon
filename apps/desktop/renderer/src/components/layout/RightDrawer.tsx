@@ -3,15 +3,12 @@ import {
   X,
   ShieldCheck,
   ShieldAlert,
-  Terminal,
-  FolderOpen,
   Copy,
   Trash2,
-  CheckCircle2,
-  Hash,
 } from 'lucide-react';
 import { useAppStore } from '../../stores/useAppStore';
 import { formatBytes, formatPercentage } from '@sentinel/shared';
+import { GlassBadge, GlassButton, GlassCard, GlassSurface } from '../glass';
 
 export const RightDrawer: React.FC = () => {
   const {
@@ -70,18 +67,18 @@ export const RightDrawer: React.FC = () => {
   };
 
   return (
-    <aside className="w-80 h-full bg-[#0c0f17]/95 backdrop-blur-2xl border-l border-white/[0.08] flex flex-col justify-between p-4 z-40 select-none overflow-y-auto">
+    <aside className="w-84 h-full bg-[var(--glass-surface-elevated)] backdrop-blur-2xl backdrop-saturate-200 border-l border-[var(--glass-border)] flex flex-col justify-between p-4 z-40 select-none overflow-y-auto shadow-2xl shadow-[var(--glass-specular)]">
       <div>
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+        <div className="flex items-center justify-between pb-3 border-b border-[var(--glass-border-subtle)]">
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono font-bold tracking-wider text-cyan-400 uppercase">
-              Inspection Inspector
+              Deep Inspector
             </span>
           </div>
           <button
             onClick={() => setIsRightDrawerOpen(false)}
-            className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -91,51 +88,51 @@ export const RightDrawer: React.FC = () => {
         {selectedProcess && (
           <div className="mt-4 space-y-4 text-xs">
             <div>
-              <div className="text-[10px] uppercase font-mono text-slate-500">Process Name</div>
-              <div className="text-sm font-bold text-white mt-0.5 break-all font-mono">
+              <div className="text-[10px] uppercase font-mono text-[var(--text-tertiary)]">Process Name</div>
+              <div className="text-sm font-bold text-[var(--text-primary)] mt-0.5 break-all font-mono">
                 {selectedProcess.name}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-slate-900/60 p-2.5 rounded-lg border border-white/5">
-                <div className="text-[10px] text-slate-500 font-mono">PID</div>
+              <GlassSurface elevation="subtle" rounded="xl" className="p-2.5">
+                <div className="text-[10px] text-[var(--text-tertiary)] font-mono">PID</div>
                 <div className="text-sm font-bold text-cyan-400 font-mono">{selectedProcess.pid}</div>
-              </div>
-              <div className="bg-slate-900/60 p-2.5 rounded-lg border border-white/5">
-                <div className="text-[10px] text-slate-500 font-mono">Parent PID</div>
-                <div className="text-sm font-bold text-slate-300 font-mono">
+              </GlassSurface>
+              <GlassSurface elevation="subtle" rounded="xl" className="p-2.5">
+                <div className="text-[10px] text-[var(--text-tertiary)] font-mono">Parent PID</div>
+                <div className="text-sm font-bold text-[var(--text-secondary)] font-mono">
                   {selectedProcess.ppid ?? 'N/A'}
                 </div>
-              </div>
-              <div className="bg-slate-900/60 p-2.5 rounded-lg border border-white/5">
-                <div className="text-[10px] text-slate-500 font-mono">CPU Usage</div>
+              </GlassSurface>
+              <GlassSurface elevation="subtle" rounded="xl" className="p-2.5">
+                <div className="text-[10px] text-[var(--text-tertiary)] font-mono">CPU Usage</div>
                 <div className="text-sm font-bold text-emerald-400 font-mono">
                   {formatPercentage(selectedProcess.cpuPercent)}
                 </div>
-              </div>
-              <div className="bg-slate-900/60 p-2.5 rounded-lg border border-white/5">
-                <div className="text-[10px] text-slate-500 font-mono">Working Set</div>
+              </GlassSurface>
+              <GlassSurface elevation="subtle" rounded="xl" className="p-2.5">
+                <div className="text-[10px] text-[var(--text-tertiary)] font-mono">Working Set</div>
                 <div className="text-sm font-bold text-cyan-400 font-mono">
                   {formatBytes(selectedProcess.memoryBytes)}
                 </div>
-              </div>
+              </GlassSurface>
             </div>
 
             {/* Path */}
             <div>
-              <div className="flex justify-between items-center text-[10px] font-mono text-slate-500">
+              <div className="flex justify-between items-center text-[10px] font-mono text-[var(--text-tertiary)]">
                 <span>Executable Path</span>
                 {selectedProcess.executablePath && (
                   <button
                     onClick={() => copyToClipboard(selectedProcess.executablePath!, 'Path')}
-                    className="hover:text-cyan-400"
+                    className="hover:text-cyan-400 transition-colors cursor-pointer"
                   >
                     <Copy className="w-3 h-3" />
                   </button>
                 )}
               </div>
-              <div className="p-2 mt-1 rounded bg-slate-900/80 border border-white/5 font-mono text-[11px] text-slate-300 break-all select-text">
+              <div className="p-2 mt-1 rounded-xl bg-[var(--glass-surface-subtle)] border border-[var(--glass-border-subtle)] font-mono text-[11px] text-[var(--text-secondary)] break-all select-text">
                 {selectedProcess.executablePath || 'Path unavailable (restricted privilege)'}
               </div>
             </div>
@@ -143,24 +140,26 @@ export const RightDrawer: React.FC = () => {
             {/* Command Line */}
             {selectedProcess.commandLine && (
               <div>
-                <div className="text-[10px] font-mono text-slate-500">Command Line Arguments</div>
-                <div className="p-2 mt-1 rounded bg-slate-900/80 border border-white/5 font-mono text-[11px] text-slate-400 break-all select-text max-h-24 overflow-y-auto">
+                <div className="text-[10px] font-mono text-[var(--text-tertiary)]">Command Line Arguments</div>
+                <div className="p-2 mt-1 rounded-xl bg-[var(--glass-surface-subtle)] border border-[var(--glass-border-subtle)] font-mono text-[11px] text-[var(--text-tertiary)] break-all select-text max-h-24 overflow-y-auto">
                   {selectedProcess.commandLine}
                 </div>
               </div>
             )}
 
             {/* Digital Signature & Authenticode Check */}
-            <div className="p-3 rounded-lg bg-slate-900/70 border border-white/5 space-y-2">
+            <GlassCard variant="subtle" className="p-3 space-y-2">
               <div className="flex justify-between items-center">
-                <span className="font-semibold text-slate-300">Authenticode Signature</span>
-                <button
+                <span className="font-semibold text-xs text-[var(--text-primary)]">Authenticode Signature</span>
+                <GlassButton
+                  variant="glass"
+                  size="xs"
+                  loading={isVerifying}
+                  disabled={!selectedProcess.executablePath}
                   onClick={handleVerifySignature}
-                  disabled={isVerifying || !selectedProcess.executablePath}
-                  className="px-2 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-[10px] font-mono border border-cyan-500/30 transition-colors disabled:opacity-50"
                 >
-                  {isVerifying ? 'Checking...' : 'Verify Signature'}
-                </button>
+                  Verify
+                </GlassButton>
               </div>
 
               {sigResult && (
@@ -178,22 +177,24 @@ export const RightDrawer: React.FC = () => {
                     {sigResult.status}
                   </span>
                   {sigResult.signer && (
-                    <span className="text-slate-400 text-[11px] truncate">
+                    <span className="text-[var(--text-tertiary)] text-[11px] truncate">
                       ({sigResult.signer})
                     </span>
                   )}
                 </div>
               )}
-            </div>
+            </GlassCard>
 
             {/* Destructive Action */}
-            <button
+            <GlassButton
+              variant="danger"
+              size="md"
+              icon={<Trash2 className="w-3.5 h-3.5" />}
               onClick={handleTerminateProcess}
-              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-400 font-semibold transition-colors mt-4"
+              className="w-full mt-4"
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Terminate Process</span>
-            </button>
+              Terminate Process
+            </GlassButton>
           </div>
         )}
 
@@ -201,36 +202,35 @@ export const RightDrawer: React.FC = () => {
         {selectedAlert && (
           <div className="mt-4 space-y-3 text-xs">
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded bg-red-500/20 border border-red-500/30 text-red-400 font-mono font-bold text-[10px]">
+              <GlassBadge variant="danger" size="sm">
                 {selectedAlert.severity}
-              </span>
-              <span className="font-mono text-slate-400 text-[11px]">{selectedAlert.ruleId}</span>
+              </GlassBadge>
+              <span className="font-mono text-[var(--text-tertiary)] text-[11px]">{selectedAlert.ruleId}</span>
             </div>
 
-            <div className="text-sm font-bold text-white mt-1">{selectedAlert.title}</div>
-            <div className="text-slate-400 text-[11px] leading-relaxed">
+            <div className="text-sm font-bold text-[var(--text-primary)] mt-1">{selectedAlert.title}</div>
+            <div className="text-[var(--text-secondary)] text-[11px] leading-relaxed">
               {selectedAlert.description}
             </div>
 
-            <div className="p-2.5 rounded-lg bg-slate-900 border border-white/5 space-y-1">
-              <div className="text-[10px] font-mono text-slate-500">Affected Resource</div>
+            <GlassSurface elevation="subtle" rounded="xl" className="p-2.5 space-y-1">
+              <div className="text-[10px] font-mono text-[var(--text-tertiary)]">Affected Resource</div>
               <div className="text-cyan-400 font-mono break-all">{selectedAlert.affectedResource}</div>
-            </div>
+            </GlassSurface>
 
-            <div className="p-2.5 rounded-lg bg-cyan-950/30 border border-cyan-500/20 space-y-1">
+            <GlassSurface elevation="subtle" rounded="xl" className="p-2.5 border-cyan-500/20 space-y-1">
               <div className="text-[10px] font-mono text-cyan-400">Recommendation</div>
-              <div className="text-slate-300 text-[11px] leading-relaxed">
+              <div className="text-[var(--text-secondary)] text-[11px] leading-relaxed">
                 {selectedAlert.recommendation}
               </div>
-            </div>
+            </GlassSurface>
           </div>
         )}
       </div>
 
-      <div className="text-[10px] text-slate-500 text-center font-mono">
+      <div className="text-[10px] text-[var(--text-tertiary)] text-center font-mono pt-4 border-t border-[var(--glass-border-subtle)]">
         Sentinel Workstation FFI Inspector
       </div>
     </aside>
   );
 };
-
