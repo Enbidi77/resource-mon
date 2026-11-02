@@ -30,3 +30,4 @@ export const AppSettingsSchema = z.object({
 export type AppSettings = z.infer<typeof AppSettingsSchema>;
 
 export const DEFAULT_APP_SETTINGS: AppSettings = AppSettingsSchema.parse({});
+

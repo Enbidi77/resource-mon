@@ -67,3 +67,4 @@ All channel names and schemas are centralized in the `@sentinel/contracts` packa
 | `sentinel:window:minimize` | Request/Response | `void` | `void` | Minimize desktop window |
 | `sentinel:window:maximize` | Request/Response | `void` | `{ isMaximized: boolean }` | Toggle window maximize/restore |
 | `sentinel:window:close` | Request/Response | `void` | `void` | Close application window |
+

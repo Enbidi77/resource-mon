@@ -19,3 +19,4 @@ export interface ISystemAdapter {
   getServices(): Promise<WindowsService[]>;
   getHardwareSummary(): Promise<HardwareSummary>;
 }
+

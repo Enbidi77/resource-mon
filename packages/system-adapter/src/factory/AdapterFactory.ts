@@ -26,3 +26,4 @@ export class AdapterFactory {
     return this.instance;
   }
 }
+

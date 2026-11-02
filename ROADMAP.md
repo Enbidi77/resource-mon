@@ -57,3 +57,4 @@ This document outlines the multi-phase implementation roadmap for Sentinel Deskt
 - [ ] Linux system adapter implementation (`/proc`, `sysfs`, `ebpf`)
 - [ ] macOS system adapter implementation (`libproc`, `sysctl`)
 - [ ] Third-party plugin capability sandbox
+

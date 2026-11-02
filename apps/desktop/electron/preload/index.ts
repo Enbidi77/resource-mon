@@ -69,3 +69,4 @@ const api: ISentinelAPI = {
 };
 
 contextBridge.exposeInMainWorld('sentinelAPI', api);
+

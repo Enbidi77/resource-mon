@@ -23,3 +23,4 @@ export const GeneratedReportSchema = z.object({
 });
 
 export type GeneratedReport = z.infer<typeof GeneratedReportSchema>;
+

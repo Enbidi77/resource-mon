@@ -100,3 +100,4 @@ export interface ISentinelAPI {
   // Reports
   generateReport: (config: ReportConfig) => Promise<GeneratedReport>;
 }
+

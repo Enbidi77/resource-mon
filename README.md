@@ -172,3 +172,4 @@ Sentinel Desktop adheres strictly to the Electron Security Checklist:
 ## 8. License
 
 Distributed under the MIT License. See `LICENSE` for more information.
+

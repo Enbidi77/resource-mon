@@ -46,3 +46,4 @@ export class RingBuffer<T> {
     return this.size;
   }
 }
+

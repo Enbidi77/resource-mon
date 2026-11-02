@@ -65,3 +65,4 @@ export const FimScanResultSchema = z.object({
 });
 
 export type FimScanResult = z.infer<typeof FimScanResultSchema>;
+

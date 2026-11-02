@@ -85,3 +85,4 @@ export class SecurityEngine {
     return this.fim.scanDirectory(dir);
   }
 }
+

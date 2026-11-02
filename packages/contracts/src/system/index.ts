@@ -56,3 +56,4 @@ export const SystemMetricsSnapshotSchema = z.object({
 export type SystemMetricsSnapshot = z.infer<typeof SystemMetricsSnapshotSchema>;
 export type CoreMetric = z.infer<typeof CoreMetricSchema>;
 export type GpuMetric = z.infer<typeof GpuMetricSchema>;
+

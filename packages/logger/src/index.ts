@@ -15,3 +15,4 @@ export function createLogger(name: string, level: LogLevel = 'info') {
 }
 
 export const defaultLogger = createLogger('sentinel');
+

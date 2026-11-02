@@ -24,3 +24,4 @@ Thank you for your interest in contributing to Sentinel Desktop.
    ```
 4. Write descriptive commit messages following the Conventional Commits specification (`feat:`, `fix:`, `docs:`, `perf:`, `refactor:`, `test:`).
 5. Open a Pull Request referencing any related issues.
+

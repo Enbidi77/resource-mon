@@ -179,3 +179,4 @@ The `SystemAdapter` interface abstracts platform-specific telemetry collection:
 - `INetworkAdapter.getActiveConnections(): Promise<NetworkConnection[]>`
 
 When running on Windows, the `WindowsSystemAdapter` is instantiated. When targeting Linux or macOS in future releases, `LinuxSystemAdapter` and `DarwinSystemAdapter` satisfy the identical interface contracts, enabling the UI and core services to remain 100% untouched.
+

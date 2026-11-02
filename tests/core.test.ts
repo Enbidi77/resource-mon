@@ -104,3 +104,4 @@ describe('Mock System Adapter & Contracts', () => {
     expect(parsedProc.success).toBe(true);
   });
 });
+

@@ -71,3 +71,4 @@ export const HardwareSummarySchema = z.object({
 });
 
 export type HardwareSummary = z.infer<typeof HardwareSummarySchema>;
+

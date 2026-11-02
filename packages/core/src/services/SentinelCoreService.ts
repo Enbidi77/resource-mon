@@ -210,3 +210,4 @@ export class SentinelCoreService {
     this.database.close();
   }
 }
+

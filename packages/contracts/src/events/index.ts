@@ -34,3 +34,4 @@ export const QueryEventsRequestSchema = z.object({
 });
 
 export type QueryEventsRequest = z.infer<typeof QueryEventsRequestSchema>;
+

@@ -7,8 +7,8 @@ import type {
   NetworkConnection,
   SecurityAlert,
   HardwareSummary,
-} from '@sentinel/contracts';
-import { formatBytes, formatPercentage } from '@sentinel/shared';
+} from "@sentinel/contracts";
+import { formatBytes, formatPercentage } from "@sentinel/shared";
 
 export interface ReportDataBundle {
   overview?: SystemOverview;
@@ -20,14 +20,17 @@ export interface ReportDataBundle {
 }
 
 export class ReportGenerator {
-  public generate(config: ReportConfig, data: ReportDataBundle): GeneratedReport {
+  public generate(
+    config: ReportConfig,
+    data: ReportDataBundle,
+  ): GeneratedReport {
     const reportId = `rep-${Date.now()}`;
     const generatedAt = new Date().toISOString();
-    let content = '';
+    let content = "";
     let filename = `Sentinel_Report_${Date.now()}`;
 
-    if (config.format === 'json') {
-      filename += '.json';
+    if (config.format === "json") {
+      filename += ".json";
       content = JSON.stringify(
         {
           reportId,
@@ -37,13 +40,13 @@ export class ReportGenerator {
           data,
         },
         null,
-        2
+        2,
       );
-    } else if (config.format === 'csv') {
-      filename += '.csv';
+    } else if (config.format === "csv") {
+      filename += ".csv";
       content = this.generateCsv(config, data);
     } else {
-      filename += '.html';
+      filename += ".html";
       content = this.generateHtml(config, data, reportId, generatedAt);
     }
 
@@ -53,42 +56,46 @@ export class ReportGenerator {
       format: config.format,
       filename,
       content,
-      sizeBytes: Buffer.byteLength(content, 'utf8'),
+      sizeBytes: Buffer.byteLength(content, "utf8"),
     };
   }
 
   private generateCsv(config: ReportConfig, data: ReportDataBundle): string {
-    const lines: string[] = [`"Report: ${config.title}"`, `"Generated: ${new Date().toISOString()}"`, ''];
+    const lines: string[] = [
+      `"Report: ${config.title}"`,
+      `"Generated: ${new Date().toISOString()}"`,
+      "",
+    ];
 
     if (data.processes && data.processes.length > 0) {
-      lines.push('--- PROCESS INVENTORY ---');
-      lines.push('PID,Name,CPU%,Memory (Bytes),Path,User');
+      lines.push("--- PROCESS INVENTORY ---");
+      lines.push("PID,Name,CPU%,Memory (Bytes),Path,User");
       for (const p of data.processes) {
         lines.push(
-          `${p.pid},"${p.name}",${p.cpuPercent},${p.memoryBytes},"${p.executablePath || ''}","${p.user || ''}"`
+          `${p.pid},"${p.name}",${p.cpuPercent},${p.memoryBytes},"${p.executablePath || ""}","${p.user || ""}"`,
         );
       }
-      lines.push('');
+      lines.push("");
     }
 
     if (data.alerts && data.alerts.length > 0) {
-      lines.push('--- SECURITY ALERTS ---');
-      lines.push('Timestamp,Severity,RuleID,Title,Resource');
+      lines.push("--- SECURITY ALERTS ---");
+      lines.push("Timestamp,Severity,RuleID,Title,Resource");
       for (const a of data.alerts) {
         lines.push(
-          `"${new Date(a.timestamp).toISOString()}",${a.severity},${a.ruleId},"${a.title}","${a.affectedResource}"`
+          `"${new Date(a.timestamp).toISOString()}",${a.severity},${a.ruleId},"${a.title}","${a.affectedResource}"`,
         );
       }
     }
 
-    return lines.join('\n');
+    return lines.join("\n");
   }
 
   private generateHtml(
     config: ReportConfig,
     data: ReportDataBundle,
     reportId: string,
-    generatedAt: string
+    generatedAt: string,
   ): string {
     return `<!DOCTYPE html>
 <html lang="en">
@@ -120,7 +127,7 @@ export class ReportGenerator {
     <p>CPU: <strong>${data.overview.cpuBrand}</strong> (${data.overview.cpuCores} Cores)</p>
     <p>Total Memory: <strong>${formatBytes(data.overview.totalMemoryBytes)}</strong></p>
   </div>`
-      : ''
+      : ""
   }
 
   ${
@@ -137,12 +144,12 @@ export class ReportGenerator {
         <td><code>${a.ruleId}</code></td>
         <td>${a.title}</td>
         <td><code>${a.affectedResource}</code></td>
-      </tr>`
+      </tr>`,
         )
-        .join('')}
+        .join("")}
     </table>
   </div>`
-      : ''
+      : ""
   }
 </body>
 </html>`;

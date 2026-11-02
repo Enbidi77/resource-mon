@@ -77,3 +77,4 @@ export class PostureEvaluator {
     return this.cachedPosture;
   }
 }
+

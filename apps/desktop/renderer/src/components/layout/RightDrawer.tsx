@@ -233,3 +233,4 @@ export const RightDrawer: React.FC = () => {
     </aside>
   );
 };
+

@@ -92,3 +92,4 @@ export const StoragePage: React.FC = () => {
     </div>
   );
 };
+

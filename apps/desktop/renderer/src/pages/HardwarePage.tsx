@@ -134,3 +134,4 @@ export const HardwarePage: React.FC = () => {
     </div>
   );
 };
+

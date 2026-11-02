@@ -50,3 +50,4 @@ export const NetworkInterfaceSchema = z.object({
 });
 
 export type NetworkInterface = z.infer<typeof NetworkInterfaceSchema>;
+

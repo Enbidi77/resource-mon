@@ -225,3 +225,4 @@ export const PerformancePage: React.FC = () => {
     </div>
   );
 };
+

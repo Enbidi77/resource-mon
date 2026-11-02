@@ -96,3 +96,4 @@ export const ArcGauge: React.FC<ArcGaugeProps> = ({
     </div>
   );
 };
+

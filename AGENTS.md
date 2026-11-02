@@ -57,3 +57,4 @@ When implementing a new feature (e.g. GPU telemetry, new security rule, or servi
 4. **Expose in Preload**: Add the typed method to `apps/desktop/src/preload/index.ts` and `window.sentinelAPI`.
 5. **Implement UI Component**: Build the React view in `apps/desktop/src/renderer/` leveraging the design system.
 6. **Add Unit / Integration Tests**: Write test cases in `tests/` or alongside the module.
+

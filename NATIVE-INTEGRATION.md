@@ -46,3 +46,4 @@ This multi-tiered approach ensures that:
 - Core metrics are ultra-fast and low-impact.
 - The application never crashes if a specific Win32 API is restricted by group policy.
 - Linux and macOS environments gracefully execute Tier 2 without throwing native Windows errors.
+

@@ -56,3 +56,4 @@ Sentinel Desktop complies with the OWASP Electron Security Checklist:
 ## 4. Reporting Vulnerabilities
 
 If you discover a potential security vulnerability in Sentinel Desktop, please report it privately via GitHub Security Advisories or by emailing `security@sentineldesktop.org`. Please do not disclose vulnerabilities publicly until a patch has been released.
+
