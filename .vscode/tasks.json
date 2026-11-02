@@ -20,7 +20,7 @@
         "background": {
           "activeOnStart": true,
           "beginsPattern": ".*electron-vite.*",
-          "endsPattern": ".*(ready in|Debugger listening on|App ready).*"
+          "endsPattern": ".*(Local:|Debugger listening on|DevTools listening on|ready in).*"
         }
       },
       "presentation": {
@@ -53,4 +53,3 @@
     }
   ]
 }
-

@@ -6,17 +6,23 @@
       "configurations": [
         "Sentinel: Debug Main Process",
         "Sentinel: Debug Renderer (Edge/Chrome)"
-      ],
-      "stopAll": true
+      ]
     }
   ],
   "configurations": [
+    {
+      "name": "⚡ Sentinel: Quick Launch Dev (Recommended)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm --filter @sentinel/desktop dev",
+      "cwd": "${workspaceFolder}"
+    },
     {
       "name": "Sentinel: Debug Main Process",
       "type": "node",
       "request": "attach",
       "port": 9229,
-      "timeout": 30000,
+      "timeout": 60000,
       "restart": true,
       "sourceMaps": true,
       "preLaunchTask": "sentinel:dev:debug",
@@ -32,19 +38,13 @@
       "type": "msedge",
       "request": "attach",
       "port": 9222,
-      "timeout": 30000,
+      "timeout": 60000,
       "webRoot": "${workspaceFolder}/apps/desktop/renderer",
       "sourceMaps": true,
+      "urlFilter": "*localhost:5173*",
       "pathMapping": {
         "/src": "${workspaceFolder}/apps/desktop/renderer/src"
       }
-    },
-    {
-      "name": "Sentinel: Launch Dev (Interactive Terminal)",
-      "type": "node-terminal",
-      "request": "launch",
-      "command": "pnpm --filter @sentinel/desktop dev",
-      "cwd": "${workspaceFolder}"
     },
     {
       "name": "Sentinel: Debug Current Vitest Test",
@@ -67,4 +67,3 @@
     }
   ]
 }
-
