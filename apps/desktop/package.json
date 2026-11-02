@@ -5,6 +5,7 @@
   "main": "./dist/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
+    "dev:debug": "electron-vite dev --inspect=9229 --remoteDebuggingPort=9222 --sourcemap",
     "build": "electron-vite build",
     "typecheck": "tsc --noEmit",
     "start": "electron ."
@@ -43,3 +44,4 @@
     "vite": "^8.3.5"
   }
 }
+

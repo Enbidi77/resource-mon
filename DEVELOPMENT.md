@@ -80,3 +80,25 @@ pnpm test:coverage
 
 ### Mocking Native Providers
 When running tests in non-Windows CI environments (e.g. GitHub Actions Linux runners), native Win32 FFI bindings automatically fall back to the mock system provider in `@sentinel/testing`, ensuring 100% test coverage without hardware dependency.
+
+---
+
+## 6. VS Code Debugging Profile
+
+Sentinel Desktop includes pre-configured VS Code Launch Configurations (`.vscode/launch.json`) and Background Tasks (`.vscode/tasks.json`):
+
+1. **🚀 Sentinel: Full Stack (Main + Renderer)**:
+   - Starts `electron-vite dev` with V8 inspector enabled on port `9229` and remote debugging enabled on port `9222`.
+   - Attaches the VS Code debugger to both the **Electron Main Process** and the **Chromium/Edge Renderer Process** simultaneously, allowing you to set breakpoints in backend native services and React UI components at the same time.
+2. **Sentinel: Debug Main Process**:
+   - Focuses debugging specifically on the Electron main process, Koffi FFI bridges, and SQLite persistence.
+3. **Sentinel: Debug Renderer (Edge/Chrome)**:
+   - Attaches to the React renderer view via port `9222` with mapped TypeScript source maps.
+4. **Sentinel: Launch Dev (Interactive Terminal)**:
+   - Spawns the app directly inside an integrated terminal session.
+5. **Sentinel: Debug Current Vitest Test**:
+   - Runs and attaches the debugger to the currently open `*.test.ts` file.
+6. **Sentinel: Debug All Tests**:
+   - Runs the complete Vitest test suite under the node debugger.
+
+
