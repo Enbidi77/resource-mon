@@ -1,0 +1,24 @@
+{
+  "name": "@sentinel/core",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sentinel/contracts": "workspace:*",
+    "@sentinel/system-adapter": "workspace:*",
+    "@sentinel/native-bridge": "workspace:*",
+    "@sentinel/monitoring": "workspace:*",
+    "@sentinel/security": "workspace:*",
+    "@sentinel/storage": "workspace:*",
+    "@sentinel/logger": "workspace:*",
+    "@sentinel/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

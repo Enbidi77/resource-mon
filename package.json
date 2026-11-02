@@ -1,0 +1,32 @@
+{
+  "name": "sentinel-desktop-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sentinel Desktop - Advanced System Resource Monitoring & Cybersecurity Workstation",
+  "packageManager": "pnpm@10.33.4",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "test": "vitest run",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "electron": "^45.2.1",
+    "electron-vite": "^6.0.0",
+    "prettier": "^3.5.3",
+    "turbo": "^2.4.4",
+    "typescript": "^5.7.3",
+    "vite": "^8.3.5",
+    "vitest": "^3.0.7"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "koffi": "^3.3.6",
+    "pino": "^9.6.0",
+    "systeminformation": "^5.33.19",
+    "zod": "^3.24.2"
+  }
+}

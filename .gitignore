@@ -1,0 +1,9 @@
+node_modules/
+.pnpm-store/
+dist/
+out/
+.turbo/
+.vite/
+*.log
+.DS_Store
+Thumbs.db
