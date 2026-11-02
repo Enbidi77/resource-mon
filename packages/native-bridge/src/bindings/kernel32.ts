@@ -18,6 +18,9 @@ export interface Win32SystemTimes {
   userTime: bigint;
 }
 
+let cachedFileTimeStruct: any = null;
+let cachedMemoryStatusExStruct: any = null;
+
 export class Kernel32Bridge {
   private k32: any = null;
   private GetSystemTimesFn: any = null;
@@ -42,22 +45,28 @@ export class Kernel32Bridge {
     if (!this.k32) return;
 
     try {
-      this.fileTimeStruct = koffi.struct('FILETIME', {
-        dwLowDateTime: 'uint32',
-        dwHighDateTime: 'uint32',
-      });
+      if (!cachedFileTimeStruct) {
+        cachedFileTimeStruct = koffi.struct('FILETIME', {
+          dwLowDateTime: 'uint32',
+          dwHighDateTime: 'uint32',
+        });
+      }
+      this.fileTimeStruct = cachedFileTimeStruct;
 
-      this.memoryStatusExStruct = koffi.struct('MEMORYSTATUSEX', {
-        dwLength: 'uint32',
-        dwMemoryLoad: 'uint32',
-        ullTotalPhys: 'uint64',
-        ullAvailPhys: 'uint64',
-        ullTotalPageFile: 'uint64',
-        ullAvailPageFile: 'uint64',
-        ullTotalVirtual: 'uint64',
-        ullAvailVirtual: 'uint64',
-        ullAvailExtendedVirtual: 'uint64',
-      });
+      if (!cachedMemoryStatusExStruct) {
+        cachedMemoryStatusExStruct = koffi.struct('MEMORYSTATUSEX', {
+          dwLength: 'uint32',
+          dwMemoryLoad: 'uint32',
+          ullTotalPhys: 'uint64',
+          ullAvailPhys: 'uint64',
+          ullTotalPageFile: 'uint64',
+          ullAvailPageFile: 'uint64',
+          ullTotalVirtual: 'uint64',
+          ullAvailVirtual: 'uint64',
+          ullAvailExtendedVirtual: 'uint64',
+        });
+      }
+      this.memoryStatusExStruct = cachedMemoryStatusExStruct;
 
       this.GetSystemTimesFn = this.k32.func(
         'bool __stdcall GetSystemTimes(_Out_ FILETIME* lpIdleTime, _Out_ FILETIME* lpKernelTime, _Out_ FILETIME* lpUserTime)'

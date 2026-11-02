@@ -4,6 +4,16 @@ import { SentinelCoreService } from '@sentinel/core';
 import { IPC_CHANNELS } from '@sentinel/contracts';
 import { defaultLogger } from '@sentinel/logger';
 
+process.on('uncaughtException', (err) => {
+  defaultLogger.error({ err }, 'CRITICAL UNCAUGHT EXCEPTION in Main Process');
+  console.error('CRITICAL UNCAUGHT EXCEPTION:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  defaultLogger.error({ reason }, 'CRITICAL UNHANDLED REJECTION in Main Process');
+  console.error('CRITICAL UNHANDLED REJECTION:', reason);
+});
+
 let mainWindow: BrowserWindow | null = null;
 let coreService: SentinelCoreService | null = null;
 
