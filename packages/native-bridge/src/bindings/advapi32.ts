@@ -36,15 +36,51 @@ export class Advapi32Bridge {
 
     if (this.adv32 && this.k32) {
       try {
+        /**
+         * Win32 GetCurrentProcess (kernel32.dll)
+         * Returns a pseudo-handle for the current process ((HANDLE)-1).
+         * This pseudo-handle has maximum possible access to the process object
+         * and does not need to be closed via CloseHandle.
+         */
         this.GetCurrentProcessFn = this.k32.func('intptr_t __stdcall GetCurrentProcess()');
+
+        /**
+         * Win32 CloseHandle (kernel32.dll)
+         * Closes the open access token handle to prevent handle leakage.
+         */
         this.CloseHandleFn = this.k32.func('bool __stdcall CloseHandle(intptr_t hObject)');
+
+        /**
+         * Win32 OpenProcessToken (advapi32.dll)
+         * Opens the access token associated with a process for querying security information.
+         * @param ProcessHandle - Handle to the process whose token is being opened.
+         * @param DesiredAccess - Requested access mask (e.g. 0x0008 for TOKEN_QUERY).
+         * @param TokenHandle - [Out] Pointer to receive the handle identifying the opened token.
+         * @returns Boolean true on success, false on failure.
+         */
         this.OpenProcessTokenFn = this.adv32.func(
           'bool __stdcall OpenProcessToken(intptr_t ProcessHandle, uint32 DesiredAccess, _Out_ intptr_t* TokenHandle)'
         );
+
+        /**
+         * Win32 GetTokenInformation (advapi32.dll)
+         * Queries detailed security information from an access token.
+         * We pass TokenElevation (class 20) to inspect the TOKEN_ELEVATION struct:
+         * struct TOKEN_ELEVATION { DWORD TokenIsElevated; };
+         * A non-zero value indicates the process is executing with elevated administrator privileges.
+         * @param TokenHandle - Handle to the queried access token.
+         * @param TokenInformationClass - Information class enum (20 = TokenElevation).
+         * @param TokenInformation - [Out] Buffer receiving the queried struct.
+         * @param TokenInformationLength - Size in bytes of output buffer (4 bytes for uint32).
+         * @param ReturnLength - [Out] Pointer to receive the actual byte count returned.
+         * @returns Boolean true on success, false on failure.
+         */
         this.GetTokenInformationFn = this.adv32.func(
           'bool __stdcall GetTokenInformation(intptr_t TokenHandle, int TokenInformationClass, _Out_ uint8_t* TokenInformation, uint32 TokenInformationLength, _Out_ uint32* ReturnLength)'
         );
 
+        // Promisified asynchronous non-blocking versions:
+        // Offloads native token security queries to libuv worker threads via Koffi's .async.
         this.OpenProcessTokenAsync = promisifyKoffi<boolean>(this.OpenProcessTokenFn);
         this.GetTokenInformationAsync = promisifyKoffi<boolean>(this.GetTokenInformationFn);
         this.CloseHandleAsync = promisifyKoffi<boolean>(this.CloseHandleFn);

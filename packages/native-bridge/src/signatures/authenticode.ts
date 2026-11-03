@@ -35,6 +35,11 @@ function ensureNativeBindings(): boolean {
     const wintrust = koffi.load('wintrust.dll');
     const crypt32 = koffi.load('crypt32.dll');
 
+    /**
+     * Win32 GUID structure
+     * Represents a 128-bit globally unique identifier (UUID) matching Windows layout.
+     * Used to identify the Authenticode action provider GUID: WINTRUST_ACTION_GENERIC_VERIFY_V2.
+     */
     koffi.struct('GUID_AUTH', {
       Data1: 'uint32',
       Data2: 'uint16',
@@ -42,6 +47,11 @@ function ensureNativeBindings(): boolean {
       Data4: koffi.array('uint8', 8),
     });
 
+    /**
+     * Win32 WINTRUST_FILE_INFO structure
+     * Specifies the target PE binary file to evaluate for digital signatures.
+     * - pcwszFilePath: Wide Unicode UTF-16 string representing the absolute path to the binary.
+     */
     WINTRUST_FILE_INFO_TYPE = koffi.struct('WINTRUST_FILE_INFO_AUTH', {
       cbStruct: 'uint32',
       pcwszFilePath: 'str16',
@@ -49,6 +59,14 @@ function ensureNativeBindings(): boolean {
       pgKnownSubject: 'void *',
     });
 
+    /**
+     * Win32 WINTRUST_DATA structure
+     * Configures the trust provider behavior when calling WinVerifyTrust:
+     * - dwUIChoice: 2 (WTD_UI_NONE) suppresses any UI prompts/dialogs.
+     * - fdwRevocationChecks: 0 (WTD_REVOKE_NONE).
+     * - dwUnionChoice: 1 (WTD_CHOICE_FILE) indicates validation of an on-disk file.
+     * - dwProvFlags: Disables network revocation checks to maintain high local performance.
+     */
     WINTRUST_DATA_TYPE = koffi.struct('WINTRUST_DATA_AUTH', {
       cbStruct: 'uint32',
       pPolicyCallbackData: 'void *',
@@ -65,29 +83,89 @@ function ensureNativeBindings(): boolean {
       pSignatureSettings: 'void *',
     });
 
+    /**
+     * Win32 WinVerifyTrust (wintrust.dll)
+     * Performs an Authenticode trust verification action on an executable binary or driver.
+     * Evaluates PE file headers, embedded PKCS#7 signatures, certificate chains, and catalog databases.
+     * @param hwnd - Window handle (null for background headless verification).
+     * @param pgActionID - Action GUID (WINTRUST_ACTION_GENERIC_VERIFY_V2).
+     * @param pWVTData - Pointer to WINTRUST_DATA configuration structure.
+     * @returns 0 (ERROR_SUCCESS) if valid and trusted, or specific Win32 HRESULT / error code.
+     */
     WinVerifyTrustFn = wintrust.func(
       'long __stdcall WinVerifyTrust(void *hwnd, GUID_AUTH *pgActionID, WINTRUST_DATA_AUTH *pWVTData)'
     );
 
+    /**
+     * Win32 CryptQueryObject (crypt32.dll)
+     * Queries a binary file to extract the embedded PKCS#7 signed message and certificate store
+     * without executing or launching the target file.
+     * @param dwObjectType - 1 (CERT_QUERY_OBJECT_FILE).
+     * @param pvObject - Wide Unicode file path buffer.
+     * @param dwExpectedContentTypeFlags - Content flag mask (e.g. CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED).
+     * @param dwExpectedFormatTypeFlags - Format flag mask (e.g. CERT_QUERY_FORMAT_FLAG_BINARY).
+     * @param phCertStore - [Out] Receives handle to the opened certificate store containing the signer cert.
+     * @param phMsg - [Out] Receives handle to the decoded cryptographic PKCS#7 message.
+     * @returns Boolean 1 on success, 0 on failure.
+     */
     CryptQueryObjectFn = crypt32.func(
       'int __stdcall CryptQueryObject(uint32 dwObjectType, const void *pvObject, uint32 dwExpectedContentTypeFlags, uint32 dwExpectedFormatTypeFlags, uint32 dwFlags, _Out_ uint32 *pdwMsgAndCertEncodingType, _Out_ uint32 *pdwContentType, _Out_ uint32 *pdwFormatType, _Out_ void **phCertStore, _Out_ void **phMsg, _Out_ void **ppvContext)'
     );
+
+    /**
+     * Win32 CryptMsgGetParam (crypt32.dll)
+     * Acquires decoded parameters/signer attributes from an open cryptographic message handle.
+     */
     CryptMsgGetParamFn = crypt32.func(
       'int __stdcall CryptMsgGetParam(void *hCryptMsg, uint32 dwParamType, uint32 dwIndex, _Out_ void *pvData, _Inout_ uint32 *pcbData)'
     );
+
+    /**
+     * Win32 CertFindCertificateInStore (crypt32.dll)
+     * Finds the signer's X.509 certificate context within the extracted certificate store.
+     * @param hCertStore - Certificate store handle from CryptQueryObject.
+     * @param dwCertEncodingType - 0x00010001 (X509_ASN_ENCODING | PKCS_7_ASN_ENCODING).
+     * @returns Pointer to CERT_CONTEXT struct or null if not found.
+     */
     CertFindCertificateInStoreFn = crypt32.func(
       'void * __stdcall CertFindCertificateInStore(void *hCertStore, uint32 dwCertEncodingType, uint32 dwFindFlags, uint32 dwFindType, const void *pvFindPara, void *pPrevCertContext)'
     );
+
+    /**
+     * Win32 CertGetNameStringA (crypt32.dll)
+     * Extracts and formats the subject Common Name (CN) / organization string from an X.509 certificate context.
+     * @param pCertContext - Pointer to the CERT_CONTEXT.
+     * @param dwType - 4 (CERT_NAME_SIMPLE_DISPLAY_TYPE).
+     * @param pszNameString - [Out] Character buffer receiving the null-terminated signer name string.
+     * @param cchNameString - Capacity in characters of the output buffer.
+     * @returns Character length written into buffer.
+     */
     CertGetNameStringAFn = crypt32.func(
       'uint32 __stdcall CertGetNameStringA(void *pCertContext, uint32 dwType, uint32 dwFlags, void *pvTypePara, _Out_ uint8 *pszNameString, uint32 cchNameString)'
     );
+
+    /**
+     * Win32 CertCloseStore (crypt32.dll)
+     * Closes the in-memory certificate store handle opened by CryptQueryObject.
+     */
     CertCloseStoreFn = crypt32.func('int __stdcall CertCloseStore(void *hCertStore, uint32 dwFlags)');
+
+    /**
+     * Win32 CryptMsgClose (crypt32.dll)
+     * Closes the cryptographic PKCS#7 message handle opened by CryptQueryObject.
+     */
     CryptMsgCloseFn = crypt32.func('int __stdcall CryptMsgClose(void *hCryptMsg)');
+
+    /**
+     * Win32 CertFreeCertificateContext (crypt32.dll)
+     * Decrements the reference count and frees the CERT_CONTEXT handle returned by CertFindCertificateInStore.
+     */
     CertFreeCertificateContextFn = crypt32.func(
       'int __stdcall CertFreeCertificateContext(void *pCertContext)'
     );
 
-    // Bind async versions using Koffi thread pool
+    // Promisified asynchronous non-blocking versions:
+    // Offloads signature verification and cryptographic object queries to libuv worker threads.
     WinVerifyTrustAsync = promisifyKoffi<number>(WinVerifyTrustFn);
     CryptQueryObjectAsync = promisifyKoffi<number>(CryptQueryObjectFn);
 

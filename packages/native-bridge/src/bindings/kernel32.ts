@@ -56,6 +56,11 @@ export class Kernel32Bridge {
 
     try {
       if (!cachedFileTimeStruct) {
+        /**
+         * Win32 FILETIME structure
+         * Represents a 64-bit value representing the number of 100-nanosecond intervals
+         * since January 1, 1601 (UTC). Used by GetSystemTimes for CPU timing deltas.
+         */
         cachedFileTimeStruct = koffi.struct('FILETIME', {
           dwLowDateTime: 'uint32',
           dwHighDateTime: 'uint32',
@@ -64,6 +69,11 @@ export class Kernel32Bridge {
       this.fileTimeStruct = cachedFileTimeStruct;
 
       if (!cachedMemoryStatusExStruct) {
+        /**
+         * Win32 MEMORYSTATUSEX structure
+         * Contains comprehensive information about both physical and virtual memory,
+         * page file limits, and current memory load percentage (0-100).
+         */
         cachedMemoryStatusExStruct = koffi.struct('MEMORYSTATUSEX', {
           dwLength: 'uint32',
           dwMemoryLoad: 'uint32',
@@ -78,22 +88,72 @@ export class Kernel32Bridge {
       }
       this.memoryStatusExStruct = cachedMemoryStatusExStruct;
 
+      /**
+       * Win32 GetSystemTimes
+       * Retrieves system timing information across all logical processors:
+       * - lpIdleTime: Time spent in the idle thread.
+       * - lpKernelTime: Time spent executing in kernel mode (NOTE: Windows includes idle time in kernel time).
+       * - lpUserTime: Time spent executing in user mode.
+       * Used to calculate host CPU usage percentage: ((kernelDelta + userDelta - idleDelta) / (kernelDelta + userDelta)).
+       */
       this.GetSystemTimesFn = this.k32.func(
         'bool __stdcall GetSystemTimes(_Out_ FILETIME* lpIdleTime, _Out_ FILETIME* lpKernelTime, _Out_ FILETIME* lpUserTime)'
       );
+
+      /**
+       * Win32 GlobalMemoryStatusEx
+       * Retrieves information about the system's current usage of both physical and virtual memory.
+       * Requires `dwLength` to be initialized to `sizeof(MEMORYSTATUSEX)` before calling.
+       * @param lpBuffer - [Inout] Pointer to MEMORYSTATUSEX struct to receive memory metrics.
+       * @returns Boolean true on success, false on failure.
+       */
       this.GlobalMemoryStatusExFn = this.k32.func(
         'bool __stdcall GlobalMemoryStatusEx(_Inout_ MEMORYSTATUSEX* lpBuffer)'
       );
+
+      /**
+       * Win32 GetTickCount64
+       * Retrieves the number of milliseconds elapsed since the system was booted.
+       * Unlike 32-bit GetTickCount (which rolls over every 49.7 days), 64-bit count does not roll over.
+       * Converted to seconds to provide host system uptime.
+       * @returns Milliseconds elapsed as a 64-bit unsigned integer.
+       */
       this.GetTickCount64Fn = this.k32.func('uint64 __stdcall GetTickCount64()');
+
+      /**
+       * Win32 OpenProcess
+       * Opens an existing local process object with requested access rights.
+       * @param dwDesiredAccess - Access mask flags (e.g. 0x0001 for PROCESS_TERMINATE).
+       * @param bInheritHandle - Whether child processes inherit this handle (false).
+       * @param dwProcessId - Target Windows Process ID (PID).
+       * @returns Handle to process (intptr_t) or null/0 if access is denied.
+       */
       this.OpenProcessFn = this.k32.func(
         'intptr_t __stdcall OpenProcess(uint32 dwDesiredAccess, bool bInheritHandle, uint32 dwProcessId)'
       );
+
+      /**
+       * Win32 TerminateProcess
+       * Immediately terminates the specified process and all of its threads.
+       * @param hProcess - Handle to the process opened with PROCESS_TERMINATE rights.
+       * @param uExitCode - Exit code to set for the terminated process (e.g. 1).
+       * @returns Boolean true if termination succeeded, false otherwise.
+       */
       this.TerminateProcessFn = this.k32.func(
         'bool __stdcall TerminateProcess(intptr_t hProcess, uint32 uExitCode)'
       );
+
+      /**
+       * Win32 CloseHandle
+       * Closes an open operating system object handle (such as the process handle from OpenProcess).
+       * Essential for preventing kernel handle leaks in the host operating system.
+       * @param hObject - Valid handle to an open object.
+       * @returns Boolean true if successfully closed, false otherwise.
+       */
       this.CloseHandleFn = this.k32.func('bool __stdcall CloseHandle(intptr_t hObject)');
 
-      // Bind asynchronous non-blocking versions using Koffi's .async and libuv thread pool
+      // Bind asynchronous non-blocking versions using Koffi's .async and libuv worker threads.
+      // Calling these keeps the Node.js event loop free of blocking Win32 C execution.
       this.GetSystemTimesAsync = promisifyKoffi<boolean>(this.GetSystemTimesFn);
       this.GlobalMemoryStatusExAsync = promisifyKoffi<boolean>(this.GlobalMemoryStatusExFn);
       this.GetTickCount64Async = promisifyKoffi<bigint | number>(this.GetTickCount64Fn);

@@ -39,6 +39,12 @@ export class PdhBridge {
 
     try {
       if (!cachedPdhCounterValueStruct) {
+        /**
+         * Win32 PDH_FMT_COUNTERVALUE structure
+         * Contains the formatted counter value returned by PdhGetFormattedCounterValue.
+         * - CStatus: Counter status code (0 = PDH_CSTATUS_VALID_DATA).
+         * - doubleValue: The computed 64-bit double-precision floating-point metric value.
+         */
         cachedPdhCounterValueStruct = koffi.struct('PDH_FMT_COUNTERVALUE', {
           CStatus: 'uint32',
           doubleValue: 'double',
@@ -46,23 +52,68 @@ export class PdhBridge {
       }
       this.counterValueStruct = cachedPdhCounterValueStruct;
 
+      /**
+       * Win32 PdhOpenQueryW (Unicode)
+       * Creates a new query session in pdh.dll used to manage the collection of performance counter data.
+       * @param szDataSource - Null for real-time live data source from the local machine.
+       * @param dwUserData - Custom user context value (0n).
+       * @param phQuery - [Out] Pointer to receive the allocated PDH query handle.
+       * @returns PDH_STATUS (0 = ERROR_SUCCESS).
+       */
       this.PdhOpenQueryWFn = this.pdh.func(
         'int __stdcall PdhOpenQueryW(str16 szDataSource, uintptr_t dwUserData, _Out_ intptr_t* phQuery)'
       );
+
+      /**
+       * Win32 PdhAddEnglishCounterW (Unicode)
+       * Adds a counter to the query using its standardized English counter path.
+       * This ensures consistent metric collection regardless of Windows language / OS localization.
+       * @param hQuery - Handle to the query session created by PdhOpenQueryW.
+       * @param szFullCounterPath - Standard English counter path (e.g., '\\PhysicalDisk(_Total)\\Disk Read Bytes/sec').
+       * @param dwUserData - Custom user context value (0n).
+       * @param phCounter - [Out] Pointer to receive the created counter handle.
+       * @returns PDH_STATUS (0 = ERROR_SUCCESS).
+       */
       this.PdhAddEnglishCounterWFn = this.pdh.func(
         'int __stdcall PdhAddEnglishCounterW(intptr_t hQuery, str16 szFullCounterPath, uintptr_t dwUserData, _Out_ intptr_t* phCounter)'
       );
+
+      /**
+       * Win32 PdhCollectQueryData
+       * Samples the current raw data values for all counters contained in the query session.
+       * Rate-based counters (e.g., bytes/sec) require two consecutive samples to calculate deltas.
+       * @param hQuery - Handle to the active query session.
+       * @returns PDH_STATUS (0 = ERROR_SUCCESS).
+       */
       this.PdhCollectQueryDataFn = this.pdh.func(
         'int __stdcall PdhCollectQueryData(intptr_t hQuery)'
       );
+
+      /**
+       * Win32 PdhGetFormattedCounterValue
+       * Computes and formats a displayable metric value from raw counter samples.
+       * @param hCounter - Handle to the specific counter to read (read or write).
+       * @param dwFormat - Requested formatting flag (0x00000200 = PDH_FMT_DOUBLE).
+       * @param lpdwType - [Out] Pointer to receive the counter type flag.
+       * @param pValue - [Inout] Pointer to PDH_FMT_COUNTERVALUE struct to receive the calculated value.
+       * @returns PDH_STATUS (0 = ERROR_SUCCESS).
+       */
       this.PdhGetFormattedCounterValueFn = this.pdh.func(
         'int __stdcall PdhGetFormattedCounterValue(intptr_t hCounter, uint32 dwFormat, _Out_ uint32* lpdwType, _Inout_ PDH_FMT_COUNTERVALUE* pValue)'
       );
+
+      /**
+       * Win32 PdhCloseQuery
+       * Closes all counters contained in the query, frees the query handle, and releases PDH memory resources.
+       * @param hQuery - Handle to the query session to terminate.
+       * @returns PDH_STATUS (0 = ERROR_SUCCESS).
+       */
       this.PdhCloseQueryFn = this.pdh.func(
         'int __stdcall PdhCloseQuery(intptr_t hQuery)'
       );
 
-      // Bind asynchronous non-blocking versions using Koffi's .async and libuv thread pool
+      // Promisified asynchronous non-blocking versions:
+      // Offload Win32 C calls to libuv worker threads via Koffi's .async to keep the event loop responsive.
       this.PdhCollectQueryDataAsync = promisifyKoffi<number>(this.PdhCollectQueryDataFn);
       this.PdhGetFormattedCounterValueAsync = promisifyKoffi<number>(this.PdhGetFormattedCounterValueFn);
       this.PdhCloseQueryAsync = promisifyKoffi<number>(this.PdhCloseQueryFn);
