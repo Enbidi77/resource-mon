@@ -1,5 +1,25 @@
 import { z } from 'zod';
 
+export const DiskInfoSchema = z.object({
+  name: z.string(),
+  type: z.string().optional(),
+  sizeBytes: z.number(),
+  interfaceType: z.string().optional(),
+  smartStatus: z.string().optional(),
+});
+export type DiskInfo = z.infer<typeof DiskInfoSchema>;
+
+export const DiskPartitionSchema = z.object({
+  fs: z.string(),
+  type: z.string().optional(),
+  sizeBytes: z.number(),
+  usedBytes: z.number(),
+  availableBytes: z.number(),
+  usePercent: z.number(),
+  mount: z.string().optional(),
+});
+export type DiskPartition = z.infer<typeof DiskPartitionSchema>;
+
 export const HardwareSummarySchema = z.object({
   cpu: z.object({
     manufacturer: z.string(),
@@ -30,15 +50,8 @@ export const HardwareSummarySchema = z.object({
       driverVersion: z.string().optional(),
     })
   ),
-  disks: z.array(
-    z.object({
-      name: z.string(),
-      type: z.string().optional(),
-      sizeBytes: z.number(),
-      interfaceType: z.string().optional(),
-      smartStatus: z.string().optional(),
-    })
-  ),
+  disks: z.array(DiskInfoSchema),
+  partitions: z.array(DiskPartitionSchema).optional(),
   networkAdapters: z.array(
     z.object({
       name: z.string(),
@@ -71,4 +84,3 @@ export const HardwareSummarySchema = z.object({
 });
 
 export type HardwareSummary = z.infer<typeof HardwareSummarySchema>;
-
