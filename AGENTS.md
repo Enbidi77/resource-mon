@@ -9,6 +9,7 @@ This document is the authoritative architectural and operational specification f
 **Sentinel Desktop** is an enterprise-grade, high-performance system resource monitor and cybersecurity workstation for Windows environments. It bridges low-level Win32 native APIs with a modern Apple Glass UI desktop experience.
 
 ### Core Stack
+
 - **Monorepo Management**: [Turborepo](https://turbo.build/) + [pnpm](https://pnpm.io/) workspaces
 - **Desktop Runtime**: [Electron 32](https://www.electronjs.org/) with multi-process architecture (Main, Context-Isolated Preload, React Renderer)
 - **UI Framework**: [React 19](https://react.dev/), [TypeScript 5.7](https://www.typescriptlang.org/), [Vite 8](https://vitejs.dev/) (`@electron-vite`), [Tailwind CSS](https://tailwindcss.com/)
@@ -69,19 +70,19 @@ resource-mon-cli/
 
 ## 3. Package Responsibilities
 
-| Package | Role & Contents |
-| :--- | :--- |
-| **`@sentinel/contracts`** | **Single Source of Truth**. Defines Zod schemas and TypeScript types for all data exchanged across processes (`system`, `process`, `network`, `security`, `services`, `events`, `hardware`, `reports`, and `ipc` channels). |
-| **`@sentinel/native-bridge`** | **Win32 Native FFI**. Koffi bindings to Windows native DLLs: `Kernel32Bridge` (CPU times, memory status, process handles), `Advapi32Bridge` (token elevation, Windows services), `PdhBridge` (Performance Data Helper disk I/O), and `AuthenticodeVerifier` (digital signatures & SHA-256). |
-| **`@sentinel/system-adapter`** | **OS Abstraction Layer**. Implements `ISystemAdapter`. `WindowsSystemAdapter` aggregates native FFI calls, PDH counters, and `systeminformation` with caching and multi-tier fallbacks. |
-| **`@sentinel/core`** | **Orchestration Service**. `SentinelCoreService` coordinates the adapter, security engine, event log reader (`EventLogReader`), and PDF/JSON report generator (`ReportGenerator`). |
-| **`@sentinel/security`** | **Cybersecurity Subsystem**. Real-time File Integrity Monitoring (`FimEngine`), CIS-inspired security posture evaluation (`PostureEvaluator`), and process anomaly detection (`ProcessAuditor`, `SecurityEngine`). |
-| **`@sentinel/monitoring`** | **Telemetry Streamer**. `SystemCollector` manages scheduled polling loops, backpressure, and `RingBuffer` time-series history storage. |
-| **`@sentinel/storage`** | **Local Persistence**. `TelemetryDatabase` manages SQLite time-series telemetry storage with automatic schema initialization and retention pruning. |
-| **`@sentinel/config`** | **Configuration Management**. Validates user preferences, theme, sampling intervals, and security policies via `AppSettingsSchema`. |
-| **`@sentinel/logger`** | **Structured Logging**. High-throughput Pino logger with contextual metadata (PID, hostname, timestamps). |
-| **`@sentinel/shared`** | **Formatters & Math**. Pure utility functions: `formatBytes`, `formatPercentage`, `formatSpeed`, `formatUptime`, `truncateHash`. |
-| **`@sentinel/testing`** | **Test Fixtures**. Provides `MockSystemAdapter` and mock fixtures for CI and headless testing without requiring Windows APIs. |
+| Package                        | Role & Contents                                                                                                                                                                                                                                                                             |
+| :----------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **`@sentinel/contracts`**      | **Single Source of Truth**. Defines Zod schemas and TypeScript types for all data exchanged across processes (`system`, `process`, `network`, `security`, `services`, `events`, `hardware`, `reports`, and `ipc` channels).                                                                 |
+| **`@sentinel/native-bridge`**  | **Win32 Native FFI**. Koffi bindings to Windows native DLLs: `Kernel32Bridge` (CPU times, memory status, process handles), `Advapi32Bridge` (token elevation, Windows services), `PdhBridge` (Performance Data Helper disk I/O), and `AuthenticodeVerifier` (digital signatures & SHA-256). |
+| **`@sentinel/system-adapter`** | **OS Abstraction Layer**. Implements `ISystemAdapter`. `WindowsSystemAdapter` aggregates native FFI calls, PDH counters, and `systeminformation` with caching and multi-tier fallbacks.                                                                                                     |
+| **`@sentinel/core`**           | **Orchestration Service**. `SentinelCoreService` coordinates the adapter, security engine, event log reader (`EventLogReader`), and PDF/JSON report generator (`ReportGenerator`).                                                                                                          |
+| **`@sentinel/security`**       | **Cybersecurity Subsystem**. Real-time File Integrity Monitoring (`FimEngine`), CIS-inspired security posture evaluation (`PostureEvaluator`), and process anomaly detection (`ProcessAuditor`, `SecurityEngine`).                                                                          |
+| **`@sentinel/monitoring`**     | **Telemetry Streamer**. `SystemCollector` manages scheduled polling loops, backpressure, and `RingBuffer` time-series history storage.                                                                                                                                                      |
+| **`@sentinel/storage`**        | **Local Persistence**. `TelemetryDatabase` manages SQLite time-series telemetry storage with automatic schema initialization and retention pruning.                                                                                                                                         |
+| **`@sentinel/config`**         | **Configuration Management**. Validates user preferences, theme, sampling intervals, and security policies via `AppSettingsSchema`.                                                                                                                                                         |
+| **`@sentinel/logger`**         | **Structured Logging**. High-throughput Pino logger with contextual metadata (PID, hostname, timestamps).                                                                                                                                                                                   |
+| **`@sentinel/shared`**         | **Formatters & Math**. Pure utility functions: `formatBytes`, `formatPercentage`, `formatSpeed`, `formatUptime`, `truncateHash`.                                                                                                                                                            |
+| **`@sentinel/testing`**        | **Test Fixtures**. Provides `MockSystemAdapter` and mock fixtures for CI and headless testing without requiring Windows APIs.                                                                                                                                                               |
 
 ---
 
@@ -115,24 +116,27 @@ resource-mon-cli/
 Sentinel Desktop uses the **Apple Glass UI** design language (inspired by macOS / visionOS Liquid Glass):
 
 ### Recommended Tokens (`apps/desktop/renderer/src/styles/index.css`)
-| Token | Dark Appearance (Default) | Light Appearance (Frosted) |
-| :--- | :--- | :--- |
-| Canvas Background | `#101114` | `#F5F5F7` |
-| Glass Surface | `rgba(40, 40, 45, 0.60)` | `rgba(255, 255, 255, 0.62)` |
-| Subtle Surface | `rgba(30, 32, 38, 0.45)` | `rgba(255, 255, 255, 0.42)` |
-| Elevated Surface | `rgba(48, 52, 62, 0.75)` | `rgba(255, 255, 255, 0.88)` |
-| Solid Surface | `#13161f` | `#FFFFFF` |
-| Glass Border | `rgba(255, 255, 255, 0.12)` | `rgba(255, 255, 255, 0.75)` |
-| Subtle Border | `rgba(255, 255, 255, 0.06)` | `rgba(0, 0, 0, 0.07)` |
+
+| Token              | Dark Appearance (Default)                   | Light Appearance (Frosted)                  |
+| :----------------- | :------------------------------------------ | :------------------------------------------ |
+| Canvas Background  | `#101114`                                   | `#F5F5F7`                                   |
+| Glass Surface      | `rgba(40, 40, 45, 0.60)`                    | `rgba(255, 255, 255, 0.62)`                 |
+| Subtle Surface     | `rgba(30, 32, 38, 0.45)`                    | `rgba(255, 255, 255, 0.42)`                 |
+| Elevated Surface   | `rgba(48, 52, 62, 0.75)`                    | `rgba(255, 255, 255, 0.88)`                 |
+| Solid Surface      | `#13161f`                                   | `#FFFFFF`                                   |
+| Glass Border       | `rgba(255, 255, 255, 0.12)`                 | `rgba(255, 255, 255, 0.75)`                 |
+| Subtle Border      | `rgba(255, 255, 255, 0.06)`                 | `rgba(0, 0, 0, 0.07)`                       |
 | Specular Highlight | `inset 0 1px 0 0 rgba(255, 255, 255, 0.18)` | `inset 0 1px 0 0 rgba(255, 255, 255, 0.95)` |
-| Primary Text | `#F5F5F7` | `#1D1D1F` |
-| Secondary Text | `#A1A1A6` | `#86868B` |
-| Tertiary Text | `#6E6E73` | `#9E9EA7` |
-| Backdrop Blur | `24px` | `24px` |
-| Corner Radius | `20px` | `20px` |
+| Primary Text       | `#F5F5F7`                                   | `#1D1D1F`                                   |
+| Secondary Text     | `#A1A1A6`                                   | `#86868B`                                   |
+| Tertiary Text      | `#6E6E73`                                   | `#9E9EA7`                                   |
+| Backdrop Blur      | `24px`                                      | `24px`                                      |
+| Corner Radius      | `20px`                                      | `20px`                                      |
 
 ### Glass Components (`apps/desktop/renderer/src/components/glass/`)
+
 Use the unified Apple Glass UI component primitives instead of raw HTML:
+
 - **`GlassCard`**: Translucent cards with specular highlight, optional glow (`cyan`, `emerald`, `purple`, `blue`, `amber`, `red`), and hover lift effects.
 - **`GlassSurface`**: Layered glass background surfaces with controlled elevation (`base`, `subtle`, `elevated`, `solid`).
 - **`GlassButton`**: Interactive spring buttons with variants (`primary`, `glass`, `secondary`, `danger`, `ghost`).
