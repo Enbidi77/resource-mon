@@ -2,6 +2,7 @@ import koffi from 'koffi';
 import { createHash } from 'crypto';
 import { createReadStream, existsSync } from 'fs';
 import { defaultLogger } from '@sentinel/logger';
+import { promisifyKoffi } from '../koffi/loader.js';
 
 export interface SignatureResult {
   status: 'VALID' | 'INVALID' | 'UNSIGNED' | 'UNCHECKED' | 'SELF_SIGNED';
@@ -21,6 +22,10 @@ let CertFreeCertificateContextFn: any = null;
 let WINTRUST_FILE_INFO_TYPE: any = null;
 let WINTRUST_DATA_TYPE: any = null;
 let actionIdObj: any = null;
+
+// Promisified async native function handles
+let WinVerifyTrustAsync: any = null;
+let CryptQueryObjectAsync: any = null;
 
 function ensureNativeBindings(): boolean {
   if (isNativeInitialized) return true;
@@ -82,6 +87,10 @@ function ensureNativeBindings(): boolean {
       'int __stdcall CertFreeCertificateContext(void *pCertContext)'
     );
 
+    // Bind async versions using Koffi thread pool
+    WinVerifyTrustAsync = promisifyKoffi<number>(WinVerifyTrustFn);
+    CryptQueryObjectAsync = promisifyKoffi<number>(CryptQueryObjectFn);
+
     // WINTRUST_ACTION_GENERIC_VERIFY_V2: {00aac56b-cd44-11d0-8cc2-00c04fc295ee}
     actionIdObj = {
       Data1: 0x00aac56b,
@@ -108,9 +117,10 @@ export class AuthenticodeVerifier {
   }
 
   /**
-   * Verifies the Authenticode signature of an executable file on Windows natively
+   * Asynchronously verifies the Authenticode signature of an executable file on Windows natively
+   * running off the main event loop thread
    */
-  public verifySignature(filePath: string): SignatureResult {
+  public async verifySignature(filePath: string): Promise<SignatureResult> {
     if (!filePath || !existsSync(filePath)) {
       return { status: 'UNCHECKED' };
     }
@@ -149,7 +159,12 @@ export class AuthenticodeVerifier {
         pSignatureSettings: null,
       };
 
-      const trustResult = WinVerifyTrustFn(null, actionIdObj, trustData);
+      let trustResult: number;
+      if (WinVerifyTrustAsync) {
+        trustResult = await WinVerifyTrustAsync(null, actionIdObj, trustData);
+      } else {
+        trustResult = WinVerifyTrustFn(null, actionIdObj, trustData);
+      }
 
       let status: SignatureResult['status'] = 'UNSIGNED';
       let signer: string | null = null;
@@ -181,8 +196,8 @@ export class AuthenticodeVerifier {
 
       // If valid or self-signed, extract signer certificate Subject CN if possible
       if (status === 'VALID' || status === 'SELF_SIGNED') {
-        if (!signer && CryptQueryObjectFn) {
-          signer = this.extractSignerName(filePath);
+        if (!signer && (CryptQueryObjectAsync || CryptQueryObjectFn)) {
+          signer = await this.extractSignerName(filePath);
         }
       }
 
@@ -197,7 +212,157 @@ export class AuthenticodeVerifier {
     }
   }
 
-  private extractSignerName(filePath: string): string | null {
+  /**
+   * Synchronously verifies Authenticode signature
+   */
+  public verifySignatureSync(filePath: string): SignatureResult {
+    if (!filePath || !existsSync(filePath)) {
+      return { status: 'UNCHECKED' };
+    }
+
+    if (this.signatureCache.has(filePath)) {
+      return this.signatureCache.get(filePath)!;
+    }
+
+    if (process.platform !== 'win32' || !ensureNativeBindings()) {
+      const res: SignatureResult = { status: 'UNCHECKED' };
+      this.signatureCache.set(filePath, res);
+      return res;
+    }
+
+    try {
+      const fileInfo = {
+        cbStruct: koffi.sizeof(WINTRUST_FILE_INFO_TYPE),
+        pcwszFilePath: filePath,
+        hFile: null,
+        pgKnownSubject: null,
+      };
+
+      const trustData = {
+        cbStruct: koffi.sizeof(WINTRUST_DATA_TYPE),
+        pPolicyCallbackData: null,
+        pSIPClientData: null,
+        dwUIChoice: 2,
+        fdwRevocationChecks: 0,
+        dwUnionChoice: 1,
+        pFile: fileInfo,
+        dwStateAction: 0,
+        hWVTStateData: null,
+        pwszURLReference: null,
+        dwProvFlags: 0x00000010 | 0x00001000,
+        dwUIContext: 0,
+        pSignatureSettings: null,
+      };
+
+      const trustResult = WinVerifyTrustFn(null, actionIdObj, trustData);
+
+      let status: SignatureResult['status'] = 'UNSIGNED';
+      let signer: string | null = null;
+
+      if (trustResult === 0) {
+        status = 'VALID';
+      } else if (trustResult === -2146762486 || trustResult === -2146762487) {
+        status = 'SELF_SIGNED';
+      } else if (trustResult === -2146869232) {
+        status = 'INVALID';
+      } else if (trustResult === -2146762496) {
+        const lower = filePath.toLowerCase();
+        const winDir = (process.env.SystemRoot || 'c:\\windows').toLowerCase();
+        if (
+          lower.startsWith(`${winDir}\\system32\\`) ||
+          lower.startsWith(`${winDir}\\syswow64\\`) ||
+          lower.startsWith(`${winDir}\\systemapps\\`)
+        ) {
+          status = 'VALID';
+          signer = 'Microsoft Windows Component';
+        } else {
+          status = 'UNSIGNED';
+        }
+      }
+
+      if (status === 'VALID' || status === 'SELF_SIGNED') {
+        if (!signer && CryptQueryObjectFn) {
+          signer = this.extractSignerNameSync(filePath);
+        }
+      }
+
+      const result: SignatureResult = { status, signer };
+      this.signatureCache.set(filePath, result);
+      return result;
+    } catch (err) {
+      defaultLogger.debug({ filePath, err }, 'Failed to verify Authenticode signature synchronously');
+      const res: SignatureResult = { status: 'UNCHECKED' };
+      this.signatureCache.set(filePath, res);
+      return res;
+    }
+  }
+
+  private async extractSignerName(filePath: string): Promise<string | null> {
+    try {
+      const encType = [0];
+      const contentType = [0];
+      const formatType = [0];
+      const hStore = [null];
+      const hMsg = [null];
+      const pContext = [null];
+
+      const wPath = Buffer.from(filePath + '\0', 'utf16le');
+      let ok: any;
+      if (CryptQueryObjectAsync) {
+        ok = await CryptQueryObjectAsync(
+          1, // CERT_QUERY_OBJECT_FILE
+          wPath,
+          1 << 10, // CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED
+          1 << 1, // CERT_QUERY_FORMAT_FLAG_BINARY
+          0,
+          encType,
+          contentType,
+          formatType,
+          hStore,
+          hMsg,
+          pContext
+        );
+      } else {
+        ok = CryptQueryObjectFn(
+          1,
+          wPath,
+          1 << 10,
+          1 << 1,
+          0,
+          encType,
+          contentType,
+          formatType,
+          hStore,
+          hMsg,
+          pContext
+        );
+      }
+
+      if (!ok || !hMsg[0]) return null;
+
+      try {
+        if (hStore[0]) {
+          const pCert = CertFindCertificateInStoreFn(hStore[0], 0x00010001, 0, 0, null, null);
+          if (pCert) {
+            const nameBuf = Buffer.alloc(256);
+            const nameLen = CertGetNameStringAFn(pCert, 4, 0, null, nameBuf, 256);
+            CertFreeCertificateContextFn(pCert);
+            if (nameLen > 1) {
+              return nameBuf.toString('utf8', 0, nameLen - 1);
+            }
+          }
+        }
+      } finally {
+        if (hStore[0]) CertCloseStoreFn(hStore[0], 0);
+        if (hMsg[0]) CryptMsgCloseFn(hMsg[0]);
+      }
+    } catch {
+      // Ignored
+    }
+    return null;
+  }
+
+  private extractSignerNameSync(filePath: string): string | null {
     try {
       const encType = [0];
       const contentType = [0];
@@ -208,10 +373,10 @@ export class AuthenticodeVerifier {
 
       const wPath = Buffer.from(filePath + '\0', 'utf16le');
       const ok = CryptQueryObjectFn(
-        1, // CERT_QUERY_OBJECT_FILE
+        1,
         wPath,
-        1 << 10, // CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED
-        1 << 1, // CERT_QUERY_FORMAT_FLAG_BINARY
+        1 << 10,
+        1 << 1,
         0,
         encType,
         contentType,

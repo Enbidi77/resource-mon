@@ -21,7 +21,7 @@ export class PostureEvaluator {
       };
     }
 
-    const isElevated = this.advapi32.isProcessElevated();
+    const isElevated = await this.advapi32.isProcessElevated();
     let antivirusName = 'Windows Defender';
     let antivirusActive = true;
     let firewallActive = true;

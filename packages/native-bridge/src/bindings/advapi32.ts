@@ -1,14 +1,28 @@
-import { NativeLibraryLoader } from '../koffi/loader.js';
+import { NativeLibraryLoader, promisifyKoffi } from '../koffi/loader.js';
 import { defaultLogger } from '@sentinel/logger';
 import { execFile, execFileSync } from 'child_process';
 import { promisify } from 'util';
-import type { WindowsService, WindowsServiceStatusEnum, WindowsServiceStartupEnum } from '@sentinel/contracts';
+import type {
+  WindowsService,
+  WindowsServiceStatusEnum,
+  WindowsServiceStartupEnum,
+} from '@sentinel/contracts';
 
 const execFileAsync = promisify(execFile);
 
 export class Advapi32Bridge {
   private adv32: any = null;
   private k32: any = null;
+
+  private GetCurrentProcessFn: any = null;
+  private CloseHandleFn: any = null;
+  private OpenProcessTokenFn: any = null;
+  private GetTokenInformationFn: any = null;
+
+  private OpenProcessTokenAsync: any = null;
+  private GetTokenInformationAsync: any = null;
+  private CloseHandleAsync: any = null;
+
   private isElevatedCache: boolean | null = null;
   private cachedServices: WindowsService[] = [];
   private lastServicesQueryTime = 0;
@@ -19,12 +33,31 @@ export class Advapi32Bridge {
 
     this.adv32 = loader.getLib('advapi32.dll');
     this.k32 = loader.getLib('kernel32.dll');
+
+    if (this.adv32 && this.k32) {
+      try {
+        this.GetCurrentProcessFn = this.k32.func('intptr_t __stdcall GetCurrentProcess()');
+        this.CloseHandleFn = this.k32.func('bool __stdcall CloseHandle(intptr_t hObject)');
+        this.OpenProcessTokenFn = this.adv32.func(
+          'bool __stdcall OpenProcessToken(intptr_t ProcessHandle, uint32 DesiredAccess, _Out_ intptr_t* TokenHandle)'
+        );
+        this.GetTokenInformationFn = this.adv32.func(
+          'bool __stdcall GetTokenInformation(intptr_t TokenHandle, int TokenInformationClass, _Out_ uint8_t* TokenInformation, uint32 TokenInformationLength, _Out_ uint32* ReturnLength)'
+        );
+
+        this.OpenProcessTokenAsync = promisifyKoffi<boolean>(this.OpenProcessTokenFn);
+        this.GetTokenInformationAsync = promisifyKoffi<boolean>(this.GetTokenInformationFn);
+        this.CloseHandleAsync = promisifyKoffi<boolean>(this.CloseHandleFn);
+      } catch (err) {
+        defaultLogger.warn({ err }, 'Failed to bind Advapi32 native elevation functions');
+      }
+    }
   }
 
   /**
-   * Checks whether the current process is running with administrative elevation
+   * Asynchronously checks whether the current process is running with administrative elevation
    */
-  public isProcessElevated(): boolean {
+  public async isProcessElevated(): Promise<boolean> {
     if (this.isElevatedCache !== null) {
       return this.isElevatedCache;
     }
@@ -35,25 +68,33 @@ export class Advapi32Bridge {
     }
 
     try {
-      if (this.adv32 && this.k32) {
-        const GetCurrentProcess = this.k32.func('intptr_t __stdcall GetCurrentProcess()');
-        const CloseHandle = this.k32.func('bool __stdcall CloseHandle(intptr_t hObject)');
-        const OpenProcessToken = this.adv32.func(
-          'bool __stdcall OpenProcessToken(intptr_t ProcessHandle, uint32 DesiredAccess, _Out_ intptr_t* TokenHandle)'
-        );
-        const GetTokenInformation = this.adv32.func(
-          'bool __stdcall GetTokenInformation(intptr_t TokenHandle, int TokenInformationClass, _Out_ uint8_t* TokenInformation, uint32 TokenInformationLength, _Out_ uint32* ReturnLength)'
-        );
-
+      if (
+        this.OpenProcessTokenAsync &&
+        this.GetTokenInformationAsync &&
+        this.GetCurrentProcessFn &&
+        this.CloseHandleAsync
+      ) {
         const TOKEN_QUERY = 0x0008;
         const TokenElevation = 20;
         const tokenBuf = [0];
 
-        if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, tokenBuf)) {
+        const opened = await this.OpenProcessTokenAsync(
+          this.GetCurrentProcessFn(),
+          TOKEN_QUERY,
+          tokenBuf
+        );
+
+        if (opened && tokenBuf[0]) {
           const elevBuf = Buffer.alloc(4);
           const retLen = [0];
-          const ok = GetTokenInformation(tokenBuf[0], TokenElevation, elevBuf, 4, retLen);
-          CloseHandle(tokenBuf[0]);
+          const ok = await this.GetTokenInformationAsync(
+            tokenBuf[0],
+            TokenElevation,
+            elevBuf,
+            4,
+            retLen
+          );
+          await this.CloseHandleAsync(tokenBuf[0]).catch(() => {});
           if (ok) {
             this.isElevatedCache = elevBuf.readUInt32LE(0) !== 0;
             return this.isElevatedCache;
@@ -61,10 +102,59 @@ export class Advapi32Bridge {
         }
       }
     } catch (err) {
-      defaultLogger.debug({ err }, 'Native elevation check failed, attempting fallback');
+      defaultLogger.debug({ err }, 'Native async elevation check failed, attempting fallback');
     }
 
-    // Fallback: Check for elevated group SID (S-1-16-12288 = High Mandatory Level)
+    // Fallback: Check for elevated group SID asynchronously
+    try {
+      const { stdout: out } = await execFileAsync('whoami.exe', ['/groups'], { encoding: 'utf8' });
+      this.isElevatedCache = out.includes('S-1-16-12288') || out.includes('High Mandatory Level');
+      return this.isElevatedCache;
+    } catch {
+      this.isElevatedCache = false;
+      return false;
+    }
+  }
+
+  /**
+   * Synchronous check for process elevation
+   */
+  public isProcessElevatedSync(): boolean {
+    if (this.isElevatedCache !== null) {
+      return this.isElevatedCache;
+    }
+
+    if (process.platform !== 'win32') {
+      this.isElevatedCache = process.getuid ? process.getuid() === 0 : false;
+      return this.isElevatedCache;
+    }
+
+    try {
+      if (
+        this.OpenProcessTokenFn &&
+        this.GetTokenInformationFn &&
+        this.GetCurrentProcessFn &&
+        this.CloseHandleFn
+      ) {
+        const TOKEN_QUERY = 0x0008;
+        const TokenElevation = 20;
+        const tokenBuf = [0];
+
+        if (this.OpenProcessTokenFn(this.GetCurrentProcessFn(), TOKEN_QUERY, tokenBuf)) {
+          const elevBuf = Buffer.alloc(4);
+          const retLen = [0];
+          const ok = this.GetTokenInformationFn(tokenBuf[0], TokenElevation, elevBuf, 4, retLen);
+          this.CloseHandleFn(tokenBuf[0]);
+          if (ok) {
+            this.isElevatedCache = elevBuf.readUInt32LE(0) !== 0;
+            return this.isElevatedCache;
+          }
+        }
+      }
+    } catch (err) {
+      defaultLogger.debug({ err }, 'Native sync elevation check failed');
+    }
+
     try {
       const out = execFileSync('whoami.exe', ['/groups'], { encoding: 'utf8' });
       this.isElevatedCache = out.includes('S-1-16-12288') || out.includes('High Mandatory Level');
@@ -76,7 +166,7 @@ export class Advapi32Bridge {
   }
 
   /**
-   * Queries Windows Services via fast PowerShell CIM
+   * Queries Windows Services via fast PowerShell CIM asynchronously
    */
   public async queryWindowsServices(): Promise<WindowsService[]> {
     if (process.platform !== 'win32') return [];
@@ -90,11 +180,15 @@ export class Advapi32Bridge {
       const psScript = `
         Get-CimInstance Win32_Service | Select-Object -Property Name, DisplayName, State, StartMode, Description, PathName, StartName, ProcessId -First 120 | ConvertTo-Json -Compress
       `;
-      const { stdout } = await execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', psScript], {
-        encoding: 'utf8',
-        timeout: 5000,
-        maxBuffer: 10 * 1024 * 1024,
-      });
+      const { stdout } = await execFileAsync(
+        'powershell.exe',
+        ['-NoProfile', '-NonInteractive', '-Command', psScript],
+        {
+          encoding: 'utf8',
+          timeout: 5000,
+          maxBuffer: 10 * 1024 * 1024,
+        }
+      );
 
       if (!stdout || !stdout.trim()) return [];
       const parsed = JSON.parse(stdout);
@@ -135,9 +229,12 @@ export class Advapi32Bridge {
   }
 
   /**
-   * Control service (start, stop, restart)
+   * Control service asynchronously (start, stop, restart)
    */
-  public async controlService(name: string, action: 'start' | 'stop' | 'restart'): Promise<{ success: boolean; error?: string }> {
+  public async controlService(
+    name: string,
+    action: 'start' | 'stop' | 'restart'
+  ): Promise<{ success: boolean; error?: string }> {
     if (process.platform !== 'win32') {
       return { success: false, error: 'Services control only supported on Windows' };
     }

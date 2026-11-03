@@ -43,22 +43,24 @@ export class WindowsSystemAdapter implements ISystemAdapter {
 
   public async getOverview(): Promise<SystemOverview> {
     if (this.cachedOverview) {
+      const uptime = await this.kernel32.getUptimeSeconds();
       return {
         ...this.cachedOverview,
-        uptimeSeconds: Math.floor(this.kernel32.getUptimeSeconds()),
+        uptimeSeconds: Math.floor(uptime),
       };
     }
 
     try {
-      const [osInfo, cpu, mem] = await Promise.all([
+      const [osInfo, cpu, mem, uptimeSecRaw, isElevated] = await Promise.all([
         si.osInfo(),
         si.cpu(),
         si.mem(),
+        this.kernel32.getUptimeSeconds(),
+        this.advapi32.isProcessElevated(),
       ]);
 
-      const uptimeSec = Math.floor(this.kernel32.getUptimeSeconds());
+      const uptimeSec = Math.floor(uptimeSecRaw);
       const bootDate = new Date(Date.now() - uptimeSec * 1000).toISOString();
-      const isElevated = this.advapi32.isProcessElevated();
 
       this.cachedOverview = {
         hostname: os.hostname(),
@@ -81,7 +83,11 @@ export class WindowsSystemAdapter implements ISystemAdapter {
       return this.cachedOverview;
     } catch (err) {
       defaultLogger.warn({ err }, 'Error building system overview; using fallback');
-      const uptimeSec = Math.floor(this.kernel32.getUptimeSeconds());
+      const [uptimeSecRaw, isElevated] = await Promise.all([
+        this.kernel32.getUptimeSeconds(),
+        this.advapi32.isProcessElevated(),
+      ]);
+      const uptimeSec = Math.floor(uptimeSecRaw);
       return {
         hostname: os.hostname(),
         platform: 'win32',
@@ -95,7 +101,7 @@ export class WindowsSystemAdapter implements ISystemAdapter {
         cpuPhysicalCores: os.cpus().length,
         cpuBaseSpeedGhz: (os.cpus()[0]?.speed || 2500) / 1000,
         totalMemoryBytes: os.totalmem(),
-        isElevated: this.advapi32.isProcessElevated(),
+        isElevated,
         sentinelVersion: '1.0.0',
       };
     }
@@ -104,12 +110,11 @@ export class WindowsSystemAdapter implements ISystemAdapter {
   public async getMetricsSnapshot(): Promise<SystemMetricsSnapshot> {
     const timestamp = Date.now();
 
-    // 1. Fast Native Win32 Memory & CPU usage
-    const nativeMem = this.kernel32.getMemoryStatus();
-    const nativeCpu = this.kernel32.calculateCpuUsagePercent();
-
-    // 2. Parallel async queries for detailed hardware & I/O
-    const [currentLoad, networkStats, graphics] = await Promise.all([
+    // 1. Parallel non-blocking async queries for native Win32 FFI and system telemetry
+    const [nativeMem, nativeCpu, diskIo, currentLoad, networkStats, graphics] = await Promise.all([
+      this.kernel32.getMemoryStatus(),
+      this.kernel32.calculateCpuUsagePercent(),
+      this.pdh.getDiskIo(),
       si.currentLoad().catch(() => null),
       si.networkStats().catch(() => null),
       si.graphics().catch(() => null),
@@ -129,7 +134,6 @@ export class WindowsSystemAdapter implements ISystemAdapter {
     const memPercent = nativeMem ? nativeMem.loadPercent : Math.round((usedMem / totalMem) * 100);
 
     // Fast Native Win32 PDH Disk I/O Throughput (Read/Write bytes per sec)
-    const diskIo = this.pdh.getDiskIo();
     const diskRead = diskIo.readBytesPerSec;
     const diskWrite = diskIo.writeBytesPerSec;
 
@@ -221,10 +225,13 @@ export class WindowsSystemAdapter implements ISystemAdapter {
       let sha256: string | null = null;
 
       if (target.executablePath) {
-        const sig = this.verifier.verifySignature(target.executablePath);
+        const [sig, sha256Val] = await Promise.all([
+          this.verifier.verifySignature(target.executablePath),
+          this.verifier.computeFileSha256(target.executablePath),
+        ]);
         signatureStatus = sig.status;
         signatureSigner = sig.signer || null;
-        sha256 = await this.verifier.computeFileSha256(target.executablePath);
+        sha256 = sha256Val;
       }
 
       const parentProc = target.ppid ? procs.find((p) => p.pid === target.ppid) : null;
@@ -247,7 +254,7 @@ export class WindowsSystemAdapter implements ISystemAdapter {
   public async controlProcess(pid: number, action: 'terminate' | 'suspend' | 'resume'): Promise<boolean> {
     try {
       if (action === 'terminate') {
-        const res = this.kernel32.terminateProcess(pid);
+        const res = await this.kernel32.terminateProcess(pid);
         return res.success;
       }
       return false;

@@ -229,7 +229,7 @@ export class SecurityAnalyzer {
             let risk: PersistenceItem["risk"] = "BENIGN";
 
             if (exists) {
-              const sig = this.verifier.verifySignature(targetPath);
+              const sig = await this.verifier.verifySignature(targetPath);
               isSigned = sig.status === "VALID";
               publisher = sig.signer || null;
 
@@ -307,7 +307,7 @@ export class SecurityAnalyzer {
         for (const file of files) {
           if (file.toLowerCase() === "desktop.ini") continue;
           const fullPath = join(folder.path, file);
-          const sig = this.verifier.verifySignature(fullPath);
+          const sig = await this.verifier.verifySignature(fullPath);
           const isSigned = sig.status === "VALID";
 
           items.push({
@@ -518,7 +518,7 @@ export class SecurityAnalyzer {
     let sha256: string | null = null;
 
     if (exists) {
-      const sig = this.verifier.verifySignature(resolvedPath);
+      const sig = await this.verifier.verifySignature(resolvedPath);
       authenticodeStatus =
         sig.status === "VALID" ? "SIGNED_VERIFIED" : sig.status;
       signer = sig.signer || null;

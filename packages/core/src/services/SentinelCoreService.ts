@@ -95,9 +95,9 @@ export class SentinelCoreService {
     return this.adapter.getProcessDetails(pid);
   }
 
-  public controlProcess(req: ProcessActionRequest): ProcessActionResult {
+  public async controlProcess(req: ProcessActionRequest): Promise<ProcessActionResult> {
     if (req.action === 'terminate') {
-      const res = this.kernel32.terminateProcess(req.pid);
+      const res = await this.kernel32.terminateProcess(req.pid);
       return {
         success: res.success,
         pid: req.pid,
@@ -113,7 +113,7 @@ export class SentinelCoreService {
     };
   }
 
-  public verifyProcessSignature(filePath: string): { status: string; signer?: string | null } {
+  public async verifyProcessSignature(filePath: string): Promise<{ status: string; signer?: string | null }> {
     return this.verifier.verifySignature(filePath);
   }
 
