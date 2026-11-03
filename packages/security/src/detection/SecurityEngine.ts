@@ -1,12 +1,16 @@
 import { FimEngine } from '../integrity/FimEngine.js';
 import { PostureEvaluator } from '../posture/PostureEvaluator.js';
 import { ProcessAuditor } from '../auditing/ProcessAuditor.js';
+import { SecurityAnalyzer } from '../analyzer/SecurityAnalyzer.js';
 import type {
   SecurityAlert,
   SecurityPosture,
   FimScanResult,
   ProcessInfo,
   NetworkConnection,
+  WindowsService,
+  SecurityAuditReport,
+  BinaryAnalysisResult,
 } from '@sentinel/contracts';
 import { defaultLogger } from '@sentinel/logger';
 
@@ -14,6 +18,7 @@ export class SecurityEngine {
   private fim = new FimEngine();
   private posture = new PostureEvaluator();
   private auditor = new ProcessAuditor();
+  private analyzer = new SecurityAnalyzer();
 
   private alerts: Map<string, SecurityAlert> = new Map();
 
@@ -84,5 +89,26 @@ export class SecurityEngine {
         : '/etc');
     return this.fim.scanDirectory(dir);
   }
-}
 
+  public async runSecurityAudit(
+    services: WindowsService[],
+    connections: NetworkConnection[],
+    processes: ProcessInfo[]
+  ): Promise<SecurityAuditReport> {
+    const posture = await this.evaluatePosture();
+    return this.analyzer.runFullAudit(
+      services,
+      connections,
+      processes,
+      posture.antivirusActive,
+      posture.firewallActive
+    );
+  }
+
+  public async analyzeBinary(
+    target: { filePath?: string; pid?: number },
+    processes: ProcessInfo[]
+  ): Promise<BinaryAnalysisResult> {
+    return this.analyzer.analyzeBinary(target, processes);
+  }
+}

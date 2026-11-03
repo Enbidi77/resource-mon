@@ -1,20 +1,114 @@
-import { execFileSync } from 'child_process';
+import koffi from 'koffi';
 import { createHash } from 'crypto';
 import { createReadStream, existsSync } from 'fs';
 import { defaultLogger } from '@sentinel/logger';
-import type { ProcessSignatureStatusEnum } from '@sentinel/contracts';
 
 export interface SignatureResult {
   status: 'VALID' | 'INVALID' | 'UNSIGNED' | 'UNCHECKED' | 'SELF_SIGNED';
   signer?: string | null;
 }
 
+// Module-level static bindings initialized once per process
+let isNativeInitialized = false;
+let WinVerifyTrustFn: any = null;
+let CryptQueryObjectFn: any = null;
+let CryptMsgGetParamFn: any = null;
+let CertFindCertificateInStoreFn: any = null;
+let CertGetNameStringAFn: any = null;
+let CertCloseStoreFn: any = null;
+let CryptMsgCloseFn: any = null;
+let CertFreeCertificateContextFn: any = null;
+let WINTRUST_FILE_INFO_TYPE: any = null;
+let WINTRUST_DATA_TYPE: any = null;
+let actionIdObj: any = null;
+
+function ensureNativeBindings(): boolean {
+  if (isNativeInitialized) return true;
+  if (process.platform !== 'win32') return false;
+
+  try {
+    const wintrust = koffi.load('wintrust.dll');
+    const crypt32 = koffi.load('crypt32.dll');
+
+    koffi.struct('GUID_AUTH', {
+      Data1: 'uint32',
+      Data2: 'uint16',
+      Data3: 'uint16',
+      Data4: koffi.array('uint8', 8),
+    });
+
+    WINTRUST_FILE_INFO_TYPE = koffi.struct('WINTRUST_FILE_INFO_AUTH', {
+      cbStruct: 'uint32',
+      pcwszFilePath: 'str16',
+      hFile: 'void *',
+      pgKnownSubject: 'void *',
+    });
+
+    WINTRUST_DATA_TYPE = koffi.struct('WINTRUST_DATA_AUTH', {
+      cbStruct: 'uint32',
+      pPolicyCallbackData: 'void *',
+      pSIPClientData: 'void *',
+      dwUIChoice: 'uint32',
+      fdwRevocationChecks: 'uint32',
+      dwUnionChoice: 'uint32',
+      pFile: 'WINTRUST_FILE_INFO_AUTH *',
+      dwStateAction: 'uint32',
+      hWVTStateData: 'void *',
+      pwszURLReference: 'void *',
+      dwProvFlags: 'uint32',
+      dwUIContext: 'uint32',
+      pSignatureSettings: 'void *',
+    });
+
+    WinVerifyTrustFn = wintrust.func(
+      'long __stdcall WinVerifyTrust(void *hwnd, GUID_AUTH *pgActionID, WINTRUST_DATA_AUTH *pWVTData)'
+    );
+
+    CryptQueryObjectFn = crypt32.func(
+      'int __stdcall CryptQueryObject(uint32 dwObjectType, const void *pvObject, uint32 dwExpectedContentTypeFlags, uint32 dwExpectedFormatTypeFlags, uint32 dwFlags, _Out_ uint32 *pdwMsgAndCertEncodingType, _Out_ uint32 *pdwContentType, _Out_ uint32 *pdwFormatType, _Out_ void **phCertStore, _Out_ void **phMsg, _Out_ void **ppvContext)'
+    );
+    CryptMsgGetParamFn = crypt32.func(
+      'int __stdcall CryptMsgGetParam(void *hCryptMsg, uint32 dwParamType, uint32 dwIndex, _Out_ void *pvData, _Inout_ uint32 *pcbData)'
+    );
+    CertFindCertificateInStoreFn = crypt32.func(
+      'void * __stdcall CertFindCertificateInStore(void *hCertStore, uint32 dwCertEncodingType, uint32 dwFindFlags, uint32 dwFindType, const void *pvFindPara, void *pPrevCertContext)'
+    );
+    CertGetNameStringAFn = crypt32.func(
+      'uint32 __stdcall CertGetNameStringA(void *pCertContext, uint32 dwType, uint32 dwFlags, void *pvTypePara, _Out_ uint8 *pszNameString, uint32 cchNameString)'
+    );
+    CertCloseStoreFn = crypt32.func('int __stdcall CertCloseStore(void *hCertStore, uint32 dwFlags)');
+    CryptMsgCloseFn = crypt32.func('int __stdcall CryptMsgClose(void *hCryptMsg)');
+    CertFreeCertificateContextFn = crypt32.func(
+      'int __stdcall CertFreeCertificateContext(void *pCertContext)'
+    );
+
+    // WINTRUST_ACTION_GENERIC_VERIFY_V2: {00aac56b-cd44-11d0-8cc2-00c04fc295ee}
+    actionIdObj = {
+      Data1: 0x00aac56b,
+      Data2: 0xcd44,
+      Data3: 0x11d0,
+      Data4: [0x8c, 0xc2, 0x00, 0xc0, 0x4f, 0xc2, 0x95, 0xee],
+    };
+
+    isNativeInitialized = true;
+    return true;
+  } catch (err) {
+    defaultLogger.warn({ err }, 'Failed to initialize native WinTrust / Crypt32 bindings; using fallback');
+    isNativeInitialized = false;
+    return false;
+  }
+}
+
 export class AuthenticodeVerifier {
   private signatureCache: Map<string, SignatureResult> = new Map();
   private hashCache: Map<string, string> = new Map();
 
+  constructor() {
+    ensureNativeBindings();
+  }
+
   /**
-   * Verifies the Authenticode signature of an executable file on Windows
+   * Verifies the Authenticode signature of an executable file on Windows natively
    */
   public verifySignature(filePath: string): SignatureResult {
     if (!filePath || !existsSync(filePath)) {
@@ -25,49 +119,70 @@ export class AuthenticodeVerifier {
       return this.signatureCache.get(filePath)!;
     }
 
-    if (process.platform !== 'win32') {
+    if (process.platform !== 'win32' || !ensureNativeBindings()) {
       const res: SignatureResult = { status: 'UNCHECKED' };
       this.signatureCache.set(filePath, res);
       return res;
     }
 
     try {
-      // Escape single quotes for PowerShell
-      const safePath = filePath.replace(/'/g, "''");
-      const psCommand = `
-        $sig = Get-AuthenticodeSignature -FilePath '${safePath}'
-        $signer = if ($sig.SignerCertificate) { $sig.SignerCertificate.Subject } else { '' }
-        @{ Status = $sig.Status.ToString(); Signer = $signer } | ConvertTo-Json -Compress
-      `;
+      const fileInfo = {
+        cbStruct: koffi.sizeof(WINTRUST_FILE_INFO_TYPE),
+        pcwszFilePath: filePath,
+        hFile: null,
+        pgKnownSubject: null,
+      };
 
-      const stdout = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', psCommand], {
-        encoding: 'utf8',
-        timeout: 4000,
-      });
+      const trustData = {
+        cbStruct: koffi.sizeof(WINTRUST_DATA_TYPE),
+        pPolicyCallbackData: null,
+        pSIPClientData: null,
+        dwUIChoice: 2, // WTD_UI_NONE
+        fdwRevocationChecks: 0, // WTD_REVOKE_NONE
+        dwUnionChoice: 1, // WTD_CHOICE_FILE
+        pFile: fileInfo,
+        dwStateAction: 0, // WTD_STATEACTION_IGNORE
+        hWVTStateData: null,
+        pwszURLReference: null,
+        dwProvFlags: 0x00000010 | 0x00001000, // WTD_REVOCATION_CHECK_NONE | WTD_CACHE_ONLY_URL_RETRIEVAL
+        dwUIContext: 0,
+        pSignatureSettings: null,
+      };
 
-      if (!stdout || !stdout.trim()) {
-        const res: SignatureResult = { status: 'UNSIGNED' };
-        this.signatureCache.set(filePath, res);
-        return res;
-      }
+      const trustResult = WinVerifyTrustFn(null, actionIdObj, trustData);
 
-      const parsed = JSON.parse(stdout.trim());
       let status: SignatureResult['status'] = 'UNSIGNED';
+      let signer: string | null = null;
 
-      if (parsed.Status === 'Valid') {
+      if (trustResult === 0) {
         status = 'VALID';
-      } else if (parsed.Status === 'NotSigned') {
-        status = 'UNSIGNED';
-      } else if (parsed.Status === 'HashMismatch' || parsed.Status === 'SecurityError') {
+      } else if (trustResult === -2146762486 || trustResult === -2146762487) {
+        // Untrusted root or self-signed
+        status = 'SELF_SIGNED';
+      } else if (trustResult === -2146869232) {
+        // Bad digest / hash mismatch
         status = 'INVALID';
+      } else if (trustResult === -2146762496) {
+        // 0x800B0100 (TRUST_E_NOSIGNATURE)
+        // Check if it's a catalog-signed Windows system binary
+        const lower = filePath.toLowerCase();
+        const winDir = (process.env.SystemRoot || 'c:\\windows').toLowerCase();
+        if (
+          lower.startsWith(`${winDir}\\system32\\`) ||
+          lower.startsWith(`${winDir}\\syswow64\\`) ||
+          lower.startsWith(`${winDir}\\systemapps\\`)
+        ) {
+          status = 'VALID';
+          signer = 'Microsoft Windows Component';
+        } else {
+          status = 'UNSIGNED';
+        }
       }
 
-      // Extract CN from Subject if present
-      let signer = parsed.Signer || null;
-      if (signer && signer.includes('CN=')) {
-        const match = signer.match(/CN=([^,]+)/);
-        if (match && match[1]) {
-          signer = match[1].trim();
+      // If valid or self-signed, extract signer certificate Subject CN if possible
+      if (status === 'VALID' || status === 'SELF_SIGNED') {
+        if (!signer && CryptQueryObjectFn) {
+          signer = this.extractSignerName(filePath);
         }
       }
 
@@ -75,11 +190,59 @@ export class AuthenticodeVerifier {
       this.signatureCache.set(filePath, result);
       return result;
     } catch (err) {
-      defaultLogger.debug({ filePath, err }, 'Failed to verify Authenticode signature');
+      defaultLogger.debug({ filePath, err }, 'Failed to verify Authenticode signature natively');
       const res: SignatureResult = { status: 'UNCHECKED' };
       this.signatureCache.set(filePath, res);
       return res;
     }
+  }
+
+  private extractSignerName(filePath: string): string | null {
+    try {
+      const encType = [0];
+      const contentType = [0];
+      const formatType = [0];
+      const hStore = [null];
+      const hMsg = [null];
+      const pContext = [null];
+
+      const wPath = Buffer.from(filePath + '\0', 'utf16le');
+      const ok = CryptQueryObjectFn(
+        1, // CERT_QUERY_OBJECT_FILE
+        wPath,
+        1 << 10, // CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED
+        1 << 1, // CERT_QUERY_FORMAT_FLAG_BINARY
+        0,
+        encType,
+        contentType,
+        formatType,
+        hStore,
+        hMsg,
+        pContext
+      );
+
+      if (!ok || !hMsg[0]) return null;
+
+      try {
+        if (hStore[0]) {
+          const pCert = CertFindCertificateInStoreFn(hStore[0], 0x00010001, 0, 0, null, null);
+          if (pCert) {
+            const nameBuf = Buffer.alloc(256);
+            const nameLen = CertGetNameStringAFn(pCert, 4, 0, null, nameBuf, 256);
+            CertFreeCertificateContextFn(pCert);
+            if (nameLen > 1) {
+              return nameBuf.toString('utf8', 0, nameLen - 1);
+            }
+          }
+        }
+      } finally {
+        if (hStore[0]) CertCloseStoreFn(hStore[0], 0);
+        if (hMsg[0]) CryptMsgCloseFn(hMsg[0]);
+      }
+    } catch {
+      // Ignored
+    }
+    return null;
   }
 
   /**

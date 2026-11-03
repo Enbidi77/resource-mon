@@ -1,12 +1,17 @@
 import { NativeLibraryLoader } from '../koffi/loader.js';
 import { defaultLogger } from '@sentinel/logger';
-import { execFileSync } from 'child_process';
+import { execFile, execFileSync } from 'child_process';
+import { promisify } from 'util';
 import type { WindowsService, WindowsServiceStatusEnum, WindowsServiceStartupEnum } from '@sentinel/contracts';
+
+const execFileAsync = promisify(execFile);
 
 export class Advapi32Bridge {
   private adv32: any = null;
   private k32: any = null;
   private isElevatedCache: boolean | null = null;
+  private cachedServices: WindowsService[] = [];
+  private lastServicesQueryTime = 0;
 
   constructor() {
     const loader = NativeLibraryLoader.getInstance();
@@ -56,15 +61,14 @@ export class Advapi32Bridge {
         }
       }
     } catch (err) {
-      defaultLogger.debug({ err }, 'Native elevation check error; falling back to PowerShell');
+      defaultLogger.debug({ err }, 'Native elevation check failed, attempting fallback');
     }
 
-    // Reliable fallback via whoami /groups
+    // Fallback: Check for elevated group SID (S-1-16-12288 = High Mandatory Level)
     try {
       const out = execFileSync('whoami.exe', ['/groups'], { encoding: 'utf8' });
-      const elevated = out.includes('S-1-16-12288') || out.includes('High Mandatory Level');
-      this.isElevatedCache = elevated;
-      return elevated;
+      this.isElevatedCache = out.includes('S-1-16-12288') || out.includes('High Mandatory Level');
+      return this.isElevatedCache;
     } catch {
       this.isElevatedCache = false;
       return false;
@@ -74,15 +78,21 @@ export class Advapi32Bridge {
   /**
    * Queries Windows Services via fast PowerShell CIM
    */
-  public queryWindowsServices(): WindowsService[] {
+  public async queryWindowsServices(): Promise<WindowsService[]> {
     if (process.platform !== 'win32') return [];
+
+    const now = Date.now();
+    if (this.cachedServices.length > 0 && now - this.lastServicesQueryTime < 10000) {
+      return this.cachedServices;
+    }
 
     try {
       const psScript = `
         Get-CimInstance Win32_Service | Select-Object -Property Name, DisplayName, State, StartMode, Description, PathName, StartName, ProcessId -First 120 | ConvertTo-Json -Compress
       `;
-      const stdout = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', psScript], {
+      const { stdout } = await execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', psScript], {
         encoding: 'utf8',
+        timeout: 5000,
         maxBuffer: 10 * 1024 * 1024,
       });
 
@@ -90,7 +100,7 @@ export class Advapi32Bridge {
       const parsed = JSON.parse(stdout);
       const items = Array.isArray(parsed) ? parsed : [parsed];
 
-      return items.map((svc: any): WindowsService => {
+      this.cachedServices = items.map((svc: any): WindowsService => {
         let status: any = 'UNKNOWN';
         const st = (svc.State || '').toLowerCase();
         if (st === 'running') status = 'RUNNING';
@@ -116,6 +126,8 @@ export class Advapi32Bridge {
           pid: svc.ProcessId ? Number(svc.ProcessId) : undefined,
         };
       });
+      this.lastServicesQueryTime = now;
+      return this.cachedServices;
     } catch (err) {
       defaultLogger.warn({ err }, 'Failed to query Windows services');
       return [];
@@ -125,7 +137,7 @@ export class Advapi32Bridge {
   /**
    * Control service (start, stop, restart)
    */
-  public controlService(name: string, action: 'start' | 'stop' | 'restart'): { success: boolean; error?: string } {
+  public async controlService(name: string, action: 'start' | 'stop' | 'restart'): Promise<{ success: boolean; error?: string }> {
     if (process.platform !== 'win32') {
       return { success: false, error: 'Services control only supported on Windows' };
     }
@@ -136,7 +148,10 @@ export class Advapi32Bridge {
       else if (action === 'stop') command = `Stop-Service -Name '${name}' -Force`;
       else if (action === 'restart') command = `Restart-Service -Name '${name}' -Force`;
 
-      execFileSync('powershell.exe', ['-NoProfile', '-Command', command], { encoding: 'utf8' });
+      await execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command], {
+        encoding: 'utf8',
+        timeout: 10000,
+      });
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || String(err) };

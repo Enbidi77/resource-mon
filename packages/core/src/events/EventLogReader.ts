@@ -1,10 +1,13 @@
-import { execFileSync } from 'child_process';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import type {
   WindowsEventLogEntry,
   QueryEventsRequest,
   WindowsEventLevelEnum,
 } from '@sentinel/contracts';
 import { defaultLogger } from '@sentinel/logger';
+
+const execFileAsync = promisify(execFile);
 
 export class EventLogReader {
   public async queryEvents(request: QueryEventsRequest): Promise<WindowsEventLogEntry[]> {
@@ -23,7 +26,7 @@ export class EventLogReader {
         ConvertTo-Json -Compress
       `;
 
-      const stdout = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', psScript], {
+      const { stdout } = await execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', psScript], {
         encoding: 'utf8',
         timeout: 6000,
         maxBuffer: 15 * 1024 * 1024,
@@ -104,4 +107,3 @@ export class EventLogReader {
     ];
   }
 }
-

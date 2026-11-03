@@ -21,6 +21,8 @@ import type {
   SecurityPosture,
   SecurityAlert,
   FimScanResult,
+  SecurityAuditReport,
+  BinaryAnalysisResult,
   HardwareSummary,
   WindowsEventLogEntry,
   QueryEventsRequest,
@@ -136,8 +138,8 @@ export class SentinelCoreService {
     return this.adapter.getServices();
   }
 
-  public controlService(req: ServiceControlRequest): ServiceControlResult {
-    const res = this.advapi32.controlService(req.serviceName, req.action);
+  public async controlService(req: ServiceControlRequest): Promise<ServiceControlResult> {
+    const res = await this.advapi32.controlService(req.serviceName, req.action);
     return {
       success: res.success,
       serviceName: req.serviceName,
@@ -160,6 +162,23 @@ export class SentinelCoreService {
 
   public runFimScan(dir?: string): Promise<FimScanResult> {
     return this.security.runFimScan(dir);
+  }
+
+  public async runSecurityAudit(): Promise<SecurityAuditReport> {
+    const [services, connections, processes] = await Promise.all([
+      this.adapter.getServices(),
+      this.adapter.getNetworkConnections(),
+      this.adapter.getProcesses(),
+    ]);
+    return this.security.runSecurityAudit(services, connections, processes);
+  }
+
+  public async analyzeBinary(target: {
+    filePath?: string;
+    pid?: number;
+  }): Promise<BinaryAnalysisResult> {
+    const processes = await this.adapter.getProcesses();
+    return this.security.analyzeBinary(target, processes);
   }
 
   public queryEvents(req: QueryEventsRequest): Promise<WindowsEventLogEntry[]> {
@@ -210,4 +229,3 @@ export class SentinelCoreService {
     this.database.close();
   }
 }
-

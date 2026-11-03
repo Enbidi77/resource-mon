@@ -1,7 +1,10 @@
-import { execFileSync } from 'child_process';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { Advapi32Bridge } from '@sentinel/native-bridge';
 import type { SecurityPosture } from '@sentinel/contracts';
 import { defaultLogger } from '@sentinel/logger';
+
+const execFileAsync = promisify(execFile);
 
 export class PostureEvaluator {
   private advapi32 = new Advapi32Bridge();
@@ -35,7 +38,7 @@ export class PostureEvaluator {
             FirewallEnabled = if ($fw) { $true } else { $false }
           } | ConvertTo-Json -Compress
         `;
-        const stdout = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', psScript], {
+        const { stdout } = await execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', psScript], {
           encoding: 'utf8',
           timeout: 4000,
         });
@@ -77,4 +80,3 @@ export class PostureEvaluator {
     return this.cachedPosture;
   }
 }
-

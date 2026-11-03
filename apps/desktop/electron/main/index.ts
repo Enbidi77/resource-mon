@@ -156,6 +156,17 @@ function setupIpcHandlers(): void {
     return coreService?.dismissAlert(alertId);
   });
 
+  ipcMain.handle(IPC_CHANNELS.SECURITY_RUN_AUDIT, async () => {
+    return coreService?.runSecurityAudit();
+  });
+
+  ipcMain.handle(
+    IPC_CHANNELS.SECURITY_ANALYZE_BINARY,
+    async (_e, target: { filePath?: string; pid?: number }) => {
+      return coreService?.analyzeBinary(target);
+    }
+  );
+
   // Events
   ipcMain.handle(IPC_CHANNELS.EVENTS_QUERY, async (_e, req) => {
     return coreService?.queryEvents(req);
@@ -189,4 +200,3 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
-

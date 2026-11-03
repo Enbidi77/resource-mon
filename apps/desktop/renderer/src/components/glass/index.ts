@@ -7,4 +7,4 @@ export * from './GlassInput';
 export * from './GlassSegmentedControl';
 export * from './GlassModal';
 export * from './GlassTableContainer';
-
+export * from './GlassTabs';

@@ -2,11 +2,11 @@ import { contextBridge, ipcRenderer } from 'electron';
 import { IPC_CHANNELS } from '@sentinel/contracts';
 import type {
   ISentinelAPI,
-  SystemMetricsSnapshot,
   ProcessActionRequest,
   ServiceControlRequest,
   QueryEventsRequest,
   ReportConfig,
+  SystemMetricsSnapshot,
 } from '@sentinel/contracts';
 
 const api: ISentinelAPI = {
@@ -20,14 +20,14 @@ const api: ISentinelAPI = {
   getSystemOverview: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_OVERVIEW),
   getSystemMetrics: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_METRICS),
   onSystemMetrics: (callback: (metrics: SystemMetricsSnapshot) => void) => {
-    const handler = (_event: any, data: SystemMetricsSnapshot) => callback(data);
-    ipcRenderer.on(IPC_CHANNELS.SYSTEM_STREAM_METRICS, handler);
+    const subscription = (_event: any, metrics: SystemMetricsSnapshot) => callback(metrics);
+    ipcRenderer.on(IPC_CHANNELS.SYSTEM_STREAM_METRICS, subscription);
     return () => {
-      ipcRenderer.removeListener(IPC_CHANNELS.SYSTEM_STREAM_METRICS, handler);
+      ipcRenderer.removeListener(IPC_CHANNELS.SYSTEM_STREAM_METRICS, subscription);
     };
   },
   toggleMetricsStream: (enabled: boolean, intervalMs?: number) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_TOGGLE_STREAM, { enabled, intervalMs }),
+    ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_TOGGLE_STREAM, enabled, intervalMs),
 
   // Processes
   listProcesses: () => ipcRenderer.invoke(IPC_CHANNELS.PROCESS_LIST),
@@ -55,6 +55,9 @@ const api: ISentinelAPI = {
     ipcRenderer.invoke(IPC_CHANNELS.SECURITY_RUN_FIM_SCAN, directoryPath),
   dismissAlert: (alertId: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SECURITY_DISMISS_ALERT, alertId),
+  runSecurityAudit: () => ipcRenderer.invoke(IPC_CHANNELS.SECURITY_RUN_AUDIT),
+  analyzeBinary: (target: { filePath?: string; pid?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SECURITY_ANALYZE_BINARY, target),
 
   // Events
   queryEvents: (request: QueryEventsRequest) =>
@@ -69,4 +72,3 @@ const api: ISentinelAPI = {
 };
 
 contextBridge.exposeInMainWorld('sentinelAPI', api);
-

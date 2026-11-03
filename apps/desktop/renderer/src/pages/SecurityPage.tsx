@@ -5,6 +5,7 @@ import {
   FileCheck,
   RefreshCw,
   CheckCircle2,
+  ScanSearch,
 } from 'lucide-react';
 import type { SecurityPosture, SecurityAlert, FimScanResult } from '@sentinel/contracts';
 import { useAppStore } from '../stores/useAppStore';
@@ -15,10 +16,18 @@ import {
   GlassButton,
   GlassCard,
   GlassSurface,
+  GlassTabs,
+  GlassTabPanel,
+  GlassTabItem,
 } from '../components/glass';
+import { SecurityAnalyzerSection } from './SecurityAnalyzerSection';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
+
+type SecurityTab = 'overview' | 'analyzer';
 
 export const SecurityPage: React.FC = () => {
   const { setSelectedAlert, addToast } = useAppStore();
+  const [activeTab, setActiveTab] = useState<SecurityTab>('overview');
   const [posture, setPosture] = useState<SecurityPosture | null>(null);
   const [alerts, setAlerts] = useState<SecurityAlert[]>([]);
   const [fimResult, setFimResult] = useState<FimScanResult | null>(null);
@@ -63,6 +72,23 @@ export const SecurityPage: React.FC = () => {
     }
   };
 
+  const tabs: GlassTabItem<SecurityTab>[] = [
+    {
+      id: 'overview',
+      label: 'Host Posture & Guards',
+      icon: <ShieldAlert className="w-4 h-4 text-red-400" />,
+      badge: alerts.length > 0 ? alerts.length : undefined,
+      badgeVariant: 'danger',
+    },
+    {
+      id: 'analyzer',
+      label: 'Security Analyzer',
+      icon: <ScanSearch className="w-4 h-4 text-cyan-400" />,
+      badge: 'Audit',
+      badgeVariant: 'cyan',
+    },
+  ];
+
   return (
     <div className="p-6 space-y-6 overflow-y-auto h-full select-none">
       {/* Header */}
@@ -73,7 +99,7 @@ export const SecurityPage: React.FC = () => {
             Host Defensive Security Center
           </h2>
           <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-            Defensive posture assessment, process anomaly detection, and File Integrity Monitoring (FIM)
+            Defensive posture assessment, process anomaly detection, and deep attack surface inspection
           </p>
         </div>
 
@@ -88,165 +114,232 @@ export const SecurityPage: React.FC = () => {
         </GlassButton>
       </div>
 
-      {/* Row 1: Posture Gauges & Controls */}
-      <div className="grid grid-cols-12 gap-6">
-        {/* Posture Score */}
-        <GlassCard className="col-span-12 lg:col-span-4 p-5 flex flex-col justify-between items-center text-center">
-          <div className="w-full text-left text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider mb-2">
-            Host Defensive Posture
-          </div>
-
-          <ArcGauge
-            value={posture ? posture.overallScore : 95}
-            title="Posture Score"
-            subtitle={`Status: ${posture ? posture.statusLevel : 'OPTIMAL'}`}
-            size={220}
-          />
-
-          <div className="w-full text-xs font-mono text-[var(--text-secondary)] pt-3 border-t border-[var(--glass-border-subtle)] flex justify-between items-center">
-            <span>Privilege Elevation:</span>
-            <GlassBadge
-              variant={posture?.isElevatedAdmin ? 'success' : 'default'}
-              size="sm"
-              dot
-            >
-              {posture?.isElevatedAdmin ? 'ADMIN' : 'USER'}
-            </GlassBadge>
-          </div>
-        </GlassCard>
-
-        {/* Protection Services Status */}
-        <GlassCard className="col-span-12 lg:col-span-8 p-5 space-y-3">
-          <div className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider border-b border-[var(--glass-border-subtle)] pb-2">
-            Host Security Control Subsystems
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex justify-between items-center">
-              <div>
-                <div className="text-xs font-bold text-[var(--text-primary)] font-mono">Antivirus Engine</div>
-                <div className="text-[11px] text-[var(--text-secondary)]">{posture?.antivirusName || 'Windows Defender'}</div>
+      {/* Shared Apple Glass Tabs */}
+      <GlassTabs
+        items={tabs}
+        value={activeTab}
+        onChange={setActiveTab}
+        variant="glass"
+        size="md"
+      >
+        {/* Tab 1: Overview Panel */}
+        <GlassTabPanel value="overview" activeValue={activeTab} className="space-y-6">
+          {/* Row 1: Posture Gauges & Controls */}
+          <div className="grid grid-cols-12 gap-6">
+            {/* Posture Score */}
+            <GlassCard className="col-span-12 lg:col-span-4 p-5 flex flex-col justify-between items-center text-center">
+              <div className="w-full text-left text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider mb-2">
+                Host Defensive Posture
               </div>
-              <GlassBadge variant="success" size="sm" dot>
-                Active
-              </GlassBadge>
-            </GlassSurface>
 
-            <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex justify-between items-center">
-              <div>
-                <div className="text-xs font-bold text-[var(--text-primary)] font-mono">Windows Firewall</div>
-                <div className="text-[11px] text-[var(--text-secondary)]">All Profiles Protected</div>
-              </div>
-              <GlassBadge variant="success" size="sm" dot>
-                Engaged
-              </GlassBadge>
-            </GlassSurface>
+              <ArcGauge
+                value={posture ? posture.overallScore : 95}
+                title="Posture Score"
+                subtitle={`Status: ${posture ? posture.statusLevel : 'OPTIMAL'}`}
+                size={220}
+              />
 
-            <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex justify-between items-center">
-              <div>
-                <div className="text-xs font-bold text-[var(--text-primary)] font-mono">User Account Control (UAC)</div>
-                <div className="text-[11px] text-[var(--text-secondary)]">Elevation Prompting</div>
-              </div>
-              <GlassBadge variant="success" size="sm" dot>
-                Enabled
-              </GlassBadge>
-            </GlassSurface>
-
-            <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex justify-between items-center">
-              <div>
-                <div className="text-xs font-bold text-[var(--text-primary)] font-mono">UEFI Secure Boot</div>
-                <div className="text-[11px] text-[var(--text-secondary)]">Firmware Signature Enforced</div>
-              </div>
-              <GlassBadge variant="success" size="sm" dot>
-                Secure
-              </GlassBadge>
-            </GlassSurface>
-          </div>
-        </GlassCard>
-      </div>
-
-      {/* Row 2: File Integrity Monitoring (FIM) */}
-      <GlassCard className="p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div>
-            <div className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
-              <FileCheck className="w-4 h-4 text-cyan-400" />
-              File Integrity Monitoring (FIM) & SHA-256 Baselines
-            </div>
-            <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
-              Monitors critical driver configurations and binary directories for unauthorized alterations
-            </div>
-          </div>
-
-          <GlassButton
-            variant="glass"
-            size="sm"
-            onClick={handleRunFim}
-            loading={isScanningFim}
-            icon={<RefreshCw className="w-3.5 h-3.5 text-cyan-400" />}
-          >
-            {isScanningFim ? 'Scanning Baseline...' : 'Run FIM Integrity Check'}
-          </GlassButton>
-        </div>
-
-        {fimResult && (
-          <GlassSurface elevation="subtle" rounded="xl" className="p-3.5 space-y-2 text-xs font-mono">
-            <div className="flex justify-between text-[var(--text-primary)]">
-              <span>Directory: {fimResult.directory}</span>
-              <span className="text-cyan-400 font-semibold">Scanned Files: {fimResult.scannedFiles}</span>
-            </div>
-            <div className="flex gap-4 text-[11px]">
-              <span className="text-emerald-400">Modified: {fimResult.modifiedCount}</span>
-              <span className="text-blue-400">Added: {fimResult.addedCount}</span>
-              <span className="text-red-400">Deleted: {fimResult.deletedCount}</span>
-            </div>
-          </GlassSurface>
-        )}
-      </GlassCard>
-
-      {/* Row 3: Security Findings Feed */}
-      <GlassCard className="p-5 space-y-3">
-        <div className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider">
-          Security Alert Feed & Evidence ({alerts.length})
-        </div>
-
-        <div className="space-y-2 max-h-64 overflow-y-auto">
-          {alerts.map((alert) => (
-            <GlassSurface
-              key={alert.id}
-              elevation="subtle"
-              rounded="xl"
-              onClick={() => setSelectedAlert(alert)}
-              className="p-3 flex items-center justify-between cursor-pointer hover:border-red-500/30 transition-all"
-            >
-              <div className="flex items-center gap-3">
+              <div className="w-full text-xs font-mono text-[var(--text-secondary)] pt-3 border-t border-[var(--glass-border-subtle)] flex justify-between items-center">
+                <span>Privilege Elevation:</span>
                 <GlassBadge
-                  variant={
-                    alert.severity === 'CRITICAL'
-                      ? 'danger'
-                      : alert.severity === 'HIGH'
-                      ? 'warning'
-                      : 'info'
-                  }
+                  variant={posture?.isElevatedAdmin ? 'success' : 'default'}
                   size="sm"
+                  dot
                 >
-                  {alert.severity}
+                  {posture?.isElevatedAdmin ? 'ADMIN' : 'USER'}
                 </GlassBadge>
+              </div>
+            </GlassCard>
 
-                <div>
-                  <div className="text-xs font-bold text-[var(--text-primary)] font-mono">{alert.title}</div>
-                  <div className="text-[11px] text-[var(--text-secondary)]">{alert.description}</div>
+            {/* Protection Services Status */}
+            <GlassCard className="col-span-12 lg:col-span-8 p-5 space-y-3">
+              <div className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider border-b border-[var(--glass-border-subtle)] pb-2">
+                Host Security Control Subsystems
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="text-xs font-bold text-[var(--text-primary)] font-mono">Antivirus Engine</div>
+                    <div className="text-[11px] text-[var(--text-secondary)] font-mono">
+                      {posture?.antivirusName || 'Windows Defender'}
+                    </div>
+                  </div>
+                  <GlassBadge variant={posture?.antivirusActive ? 'success' : 'danger'} size="sm" dot>
+                    {posture?.antivirusActive ? 'ACTIVE' : 'DISABLED'}
+                  </GlassBadge>
+                </GlassSurface>
+
+                <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="text-xs font-bold text-[var(--text-primary)] font-mono">Host Firewall</div>
+                    <div className="text-[11px] text-[var(--text-secondary)] font-mono">Profile Enforcement</div>
+                  </div>
+                  <GlassBadge variant={posture?.firewallActive ? 'success' : 'danger'} size="sm" dot>
+                    {posture?.firewallActive ? 'ACTIVE' : 'DISABLED'}
+                  </GlassBadge>
+                </GlassSurface>
+
+                <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="text-xs font-bold text-[var(--text-primary)] font-mono">Secure Boot</div>
+                    <div className="text-[11px] text-[var(--text-secondary)] font-mono">UEFI Firmware State</div>
+                  </div>
+                  <GlassBadge variant={posture?.secureBootEnabled ? 'success' : 'warning'} size="sm" dot>
+                    {posture?.secureBootEnabled ? 'ENABLED' : 'UNVERIFIED'}
+                  </GlassBadge>
+                </GlassSurface>
+
+                <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="text-xs font-bold text-[var(--text-primary)] font-mono">User Account Control</div>
+                    <div className="text-[11px] text-[var(--text-secondary)] font-mono">Elevation Guard</div>
+                  </div>
+                  <GlassBadge variant={posture?.uacEnabled ? 'success' : 'danger'} size="sm" dot>
+                    {posture?.uacEnabled ? 'ENFORCED' : 'OFF'}
+                  </GlassBadge>
+                </GlassSurface>
+              </div>
+            </GlassCard>
+          </div>
+
+          {/* Row 2: File Integrity Monitoring (FIM) */}
+          <GlassCard className="p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[var(--glass-border-subtle)] pb-3">
+              <div>
+                <h3 className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
+                  <FileCheck className="w-4 h-4 text-cyan-400" />
+                  File Integrity Monitoring (FIM)
+                </h3>
+                <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                  Monitors critical Windows driver and hosts file configurations for unauthorized tampering
+                </p>
+              </div>
+
+              <GlassButton
+                variant="glass"
+                size="sm"
+                onClick={handleRunFim}
+                loading={isScanningFim}
+                icon={<RefreshCw className="w-3 h-3 text-cyan-400" />}
+              >
+                Scan Protected Paths
+              </GlassButton>
+            </div>
+
+            {fimResult && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <GlassSurface elevation="subtle" rounded="xl" className="p-3 text-center">
+                    <div className="text-lg font-mono font-bold text-[var(--text-primary)]">{fimResult.scannedFiles}</div>
+                    <div className="text-[10px] text-[var(--text-secondary)] uppercase">Files Scanned</div>
+                  </GlassSurface>
+                  <GlassSurface elevation="subtle" rounded="xl" className="p-3 text-center">
+                    <div className="text-lg font-mono font-bold text-amber-400">{fimResult.modifiedCount}</div>
+                    <div className="text-[10px] text-[var(--text-secondary)] uppercase">Modified</div>
+                  </GlassSurface>
+                  <GlassSurface elevation="subtle" rounded="xl" className="p-3 text-center">
+                    <div className="text-lg font-mono font-bold text-emerald-400">{fimResult.addedCount}</div>
+                    <div className="text-[10px] text-[var(--text-secondary)] uppercase">Added</div>
+                  </GlassSurface>
+                  <GlassSurface elevation="subtle" rounded="xl" className="p-3 text-center">
+                    <div className="text-lg font-mono font-bold text-red-400">{fimResult.deletedCount}</div>
+                    <div className="text-[10px] text-[var(--text-secondary)] uppercase">Deleted</div>
+                  </GlassSurface>
+                </div>
+
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {fimResult.entries.map((entry) => (
+                    <GlassSurface
+                      key={entry.filePath}
+                      elevation="subtle"
+                      rounded="xl"
+                      className="p-2.5 flex items-center justify-between text-xs font-mono"
+                    >
+                      <div className="flex items-center gap-2">
+                        {entry.status === 'CLEAN' ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        ) : (
+                          <ShieldAlert className="w-4 h-4 text-amber-400" />
+                        )}
+                        <span className="text-[var(--text-primary)]">{entry.fileName}</span>
+                      </div>
+                      <GlassBadge
+                        variant={entry.status === 'CLEAN' ? 'success' : 'warning'}
+                        size="sm"
+                      >
+                        {entry.status}
+                      </GlassBadge>
+                    </GlassSurface>
+                  ))}
                 </div>
               </div>
+            )}
+          </GlassCard>
 
-              <div className="text-right text-[11px] font-mono text-[var(--text-tertiary)]">
-                <div>{formatTimestamp(alert.timestamp)}</div>
-                <div className="text-[var(--text-secondary)] text-[10px]">{alert.ruleId}</div>
+          {/* Row 3: Security Alerts & Incidents */}
+          <GlassCard className="p-5 space-y-4">
+            <div className="flex justify-between items-center border-b border-[var(--glass-border-subtle)] pb-3">
+              <div>
+                <h3 className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-red-400" />
+                  Active Security Incidents & Anomaly Detections ({alerts.length})
+                </h3>
               </div>
-            </GlassSurface>
-          ))}
-        </div>
-      </GlassCard>
+            </div>
+
+            <div className="space-y-2">
+              {alerts.length === 0 && (
+                <div className="text-center py-6 text-xs text-[var(--text-secondary)] font-mono">
+                  No active security threats or anomalies detected.
+                </div>
+              )}
+
+              {alerts.map((alert) => (
+                <GlassSurface
+                  key={alert.id}
+                  elevation="subtle"
+                  rounded="xl"
+                  onClick={() => setSelectedAlert(alert)}
+                  className="p-3 flex items-center justify-between cursor-pointer hover:border-red-500/30 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <GlassBadge
+                      variant={
+                        alert.severity === 'CRITICAL'
+                          ? 'danger'
+                          : alert.severity === 'HIGH'
+                          ? 'warning'
+                          : 'info'
+                      }
+                      size="sm"
+                    >
+                      {alert.severity}
+                    </GlassBadge>
+
+                    <div>
+                      <div className="text-xs font-bold text-[var(--text-primary)] font-mono">{alert.title}</div>
+                      <div className="text-[11px] text-[var(--text-secondary)]">{alert.description}</div>
+                    </div>
+                  </div>
+
+                  <div className="text-right text-[11px] font-mono text-[var(--text-tertiary)]">
+                    <div>{formatTimestamp(alert.timestamp)}</div>
+                    <div className="text-[var(--text-secondary)] text-[10px]">{alert.ruleId}</div>
+                  </div>
+                </GlassSurface>
+              ))}
+            </div>
+          </GlassCard>
+        </GlassTabPanel>
+
+        {/* Tab 2: Security Analyzer Panel */}
+        <GlassTabPanel value="analyzer" activeValue={activeTab}>
+          <ErrorBoundary fallbackTitle="Security Analyzer Exception">
+            <SecurityAnalyzerSection />
+          </ErrorBoundary>
+        </GlassTabPanel>
+      </GlassTabs>
     </div>
   );
 };
