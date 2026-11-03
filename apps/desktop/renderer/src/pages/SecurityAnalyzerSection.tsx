@@ -621,7 +621,7 @@ export const SecurityAnalyzerSection: React.FC = () => {
         <GlassTableContainer className="max-h-72 overflow-y-auto">
           <table className="w-full text-left border-collapse text-xs font-mono">
             <thead>
-              <tr className="border-b border-[var(--glass-border-subtle)] text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">
+              <tr className="border-b border-black/[0.08] dark:border-white/10 text-[10px] text-slate-600 dark:text-white/70 uppercase tracking-wider font-semibold">
                 <th className="p-3">Name</th>
                 <th className="p-3">Source Location</th>
                 <th className="p-3">Target Binary</th>
@@ -629,38 +629,38 @@ export const SecurityAnalyzerSection: React.FC = () => {
                 <th className="p-3 text-right">Risk Assessment</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--glass-border-subtle)]">
+            <tbody className="divide-y divide-black/[0.06] dark:divide-white/[0.08]">
               {auditReport?.persistenceItems.map((item) => (
                 <tr
                   key={item.id}
-                  className="hover:bg-white/[0.02] transition-colors cursor-pointer"
+                  className="hover:bg-cyan-500/[0.06] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
                   onClick={() => {
                     setTargetInput(item.targetPath);
                     handleAnalyzeTarget(item.targetPath);
                   }}
                 >
-                  <td className="p-3 font-semibold text-[var(--text-primary)]">
+                  <td className="p-3 font-semibold text-slate-900 dark:text-white">
                     {item.name}
                   </td>
-                  <td className="p-3 text-[11px] text-[var(--text-secondary)]">
+                  <td className="p-3 text-[11px] text-slate-600 dark:text-white/70">
                     <GlassBadge variant="default" size="sm">
                       {item.source}
                     </GlassBadge>
                   </td>
                   <td
-                    className="p-3 text-[11px] text-[var(--text-secondary)] max-w-xs truncate"
+                    className="p-3 text-[11px] text-slate-600 dark:text-white/70 max-w-xs truncate"
                     title={item.targetPath}
                   >
                     {item.targetPath}
                   </td>
                   <td className="p-3 text-[11px]">
                     {item.isSigned ? (
-                      <span className="text-emerald-400 flex items-center gap-1">
+                      <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium">
                         <Lock className="w-3 h-3" />{" "}
                         {item.publisher || "Verified Signer"}
                       </span>
                     ) : (
-                      <span className="text-amber-400 flex items-center gap-1">
+                      <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1 font-medium">
                         <Unlock className="w-3 h-3" /> Unsigned
                       </span>
                     )}

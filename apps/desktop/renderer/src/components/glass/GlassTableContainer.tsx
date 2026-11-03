@@ -1,5 +1,5 @@
-import React from 'react';
-import { cn } from './utils';
+import React from "react";
+import { cn } from "./utils";
 
 export interface GlassTableContainerProps extends React.HTMLAttributes<HTMLDivElement> {
   header?: React.ReactNode;
@@ -17,22 +17,23 @@ export const GlassTableContainer: React.FC<GlassTableContainerProps> = ({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-[var(--glass-border)] overflow-hidden flex flex-col',
-        'bg-[var(--glass-surface-solid)] shadow-[var(--glass-shadow-soft)] relative',
-        'transition-colors duration-200',
-        className
+        "rounded-2xl border border-black/[0.08] dark:border-white/10 overflow-hidden flex flex-col",
+        "bg-white/70 dark:bg-white/[0.035] backdrop-blur-2xl backdrop-saturate-180",
+        "shadow-md dark:shadow-2xl dark:shadow-black/40 relative",
+        "transition-all duration-200",
+        className,
       )}
       {...props}
     >
       {/* Specular Edge Highlight */}
       <div
-        className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none"
+        className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/80 dark:via-white/30 to-transparent pointer-events-none"
         aria-hidden="true"
       />
 
       {/* Header Container */}
       {header && (
-        <div className="bg-[var(--glass-surface-subtle)] border-b border-[var(--glass-border-subtle)] px-4 py-3">
+        <div className="bg-black/[0.03] dark:bg-white/[0.04] backdrop-blur-xl border-b border-black/[0.08] dark:border-white/10 px-4 py-3 shrink-0 select-none">
           {header}
         </div>
       )}
@@ -42,11 +43,10 @@ export const GlassTableContainer: React.FC<GlassTableContainerProps> = ({
 
       {/* Footer Container */}
       {footer && (
-        <div className="bg-[var(--glass-surface-subtle)] border-t border-[var(--glass-border-subtle)] px-4 py-2 text-[11px] font-mono text-[var(--text-secondary)]">
+        <div className="bg-black/[0.03] dark:bg-white/[0.03] backdrop-blur-xl border-t border-black/[0.08] dark:border-white/10 px-4 py-2.5 text-[11px] font-mono text-slate-600 dark:text-white/70 shrink-0 select-none">
           {footer}
         </div>
       )}
     </div>
   );
 };
-

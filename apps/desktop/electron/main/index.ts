@@ -1,17 +1,23 @@
-import { app, BrowserWindow, ipcMain, shell, session } from 'electron';
-import { join } from 'path';
-import { SentinelCoreService } from '@sentinel/core';
-import { IPC_CHANNELS } from '@sentinel/contracts';
-import { defaultLogger } from '@sentinel/logger';
+import { app, BrowserWindow, ipcMain, shell, session } from "electron";
+import { join } from "path";
+import { SentinelCoreService } from "@sentinel/core";
+import { IPC_CHANNELS } from "@sentinel/contracts";
+import { defaultLogger } from "@sentinel/logger";
 
-process.on('uncaughtException', (err) => {
-  defaultLogger.error({ err }, 'CRITICAL UNCAUGHT EXCEPTION in Main Process');
-  console.error('CRITICAL UNCAUGHT EXCEPTION:', err);
+// Hardware acceleration & transparent visual support for authentic Apple Glass / Acrylic blur
+app.commandLine.appendSwitch("enable-transparent-visuals");
+
+process.on("uncaughtException", (err) => {
+  defaultLogger.error({ err }, "CRITICAL UNCAUGHT EXCEPTION in Main Process");
+  console.error("CRITICAL UNCAUGHT EXCEPTION:", err);
 });
 
-process.on('unhandledRejection', (reason) => {
-  defaultLogger.error({ reason }, 'CRITICAL UNHANDLED REJECTION in Main Process');
-  console.error('CRITICAL UNHANDLED REJECTION:', reason);
+process.on("unhandledRejection", (reason) => {
+  defaultLogger.error(
+    { reason },
+    "CRITICAL UNHANDLED REJECTION in Main Process",
+  );
+  console.error("CRITICAL UNHANDLED REJECTION:", reason);
 });
 
 let mainWindow: BrowserWindow | null = null;
@@ -25,32 +31,35 @@ function createWindow(): void {
     minHeight: 700,
     show: false,
     frame: false, // Frameless custom glass workstation titlebar
-    backgroundColor: '#0a0c10',
-    title: 'Sentinel Desktop',
+    transparent: true,
+    backgroundColor: "#00000000", // Transparent base for authentic glass blur
+    vibrancy: process.platform === "darwin" ? "under-window" : undefined,
+    backgroundMaterial: process.platform === "win32" ? "acrylic" : undefined,
+    title: "Sentinel Desktop",
     autoHideMenuBar: true,
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, "../preload/index.js"),
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
 
-  mainWindow.on('ready-to-show', () => {
+  mainWindow.on("ready-to-show", () => {
     mainWindow?.show();
   });
 
   // Handle external link clicks safely in system browser
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url);
-    return { action: 'deny' };
+    return { action: "deny" };
   });
 
   // Load URL from Vite Dev Server in development or packaged file in production
-  if (process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
+  if (process.env["ELECTRON_RENDERER_URL"]) {
+    mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+    mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
   }
 }
 
@@ -89,9 +98,12 @@ function setupIpcHandlers(): void {
     return coreService?.getMetricsSnapshot();
   });
 
-  ipcMain.handle(IPC_CHANNELS.SYSTEM_TOGGLE_STREAM, (_e, { enabled, intervalMs }) => {
-    return coreService?.toggleMetricsStream(enabled, intervalMs);
-  });
+  ipcMain.handle(
+    IPC_CHANNELS.SYSTEM_TOGGLE_STREAM,
+    (_e, { enabled, intervalMs }) => {
+      return coreService?.toggleMetricsStream(enabled, intervalMs);
+    },
+  );
 
   // Stream live metrics updates to the renderer
   coreService.onSystemMetrics((snapshot) => {
@@ -113,13 +125,19 @@ function setupIpcHandlers(): void {
     return coreService?.controlProcess(req);
   });
 
-  ipcMain.handle(IPC_CHANNELS.PROCESS_VERIFY_SIGNATURE, async (_e, filePath: string) => {
-    return coreService?.verifyProcessSignature(filePath);
-  });
+  ipcMain.handle(
+    IPC_CHANNELS.PROCESS_VERIFY_SIGNATURE,
+    async (_e, filePath: string) => {
+      return coreService?.verifyProcessSignature(filePath);
+    },
+  );
 
-  ipcMain.handle(IPC_CHANNELS.PROCESS_COMPUTE_HASH, async (_e, filePath: string) => {
-    return coreService?.computeProcessHash(filePath);
-  });
+  ipcMain.handle(
+    IPC_CHANNELS.PROCESS_COMPUTE_HASH,
+    async (_e, filePath: string) => {
+      return coreService?.computeProcessHash(filePath);
+    },
+  );
 
   // Network
   ipcMain.handle(IPC_CHANNELS.NETWORK_GET_CONNECTIONS, async () => {
@@ -148,13 +166,19 @@ function setupIpcHandlers(): void {
     return coreService?.getSecurityAlerts();
   });
 
-  ipcMain.handle(IPC_CHANNELS.SECURITY_RUN_FIM_SCAN, async (_e, dir?: string) => {
-    return coreService?.runFimScan(dir);
-  });
+  ipcMain.handle(
+    IPC_CHANNELS.SECURITY_RUN_FIM_SCAN,
+    async (_e, dir?: string) => {
+      return coreService?.runFimScan(dir);
+    },
+  );
 
-  ipcMain.handle(IPC_CHANNELS.SECURITY_DISMISS_ALERT, async (_e, alertId: string) => {
-    return coreService?.dismissAlert(alertId);
-  });
+  ipcMain.handle(
+    IPC_CHANNELS.SECURITY_DISMISS_ALERT,
+    async (_e, alertId: string) => {
+      return coreService?.dismissAlert(alertId);
+    },
+  );
 
   ipcMain.handle(IPC_CHANNELS.SECURITY_RUN_AUDIT, async () => {
     return coreService?.runSecurityAudit();
@@ -164,7 +188,7 @@ function setupIpcHandlers(): void {
     IPC_CHANNELS.SECURITY_ANALYZE_BINARY,
     async (_e, target: { filePath?: string; pid?: number }) => {
       return coreService?.analyzeBinary(target);
-    }
+    },
   );
 
   // Events
@@ -187,16 +211,16 @@ app.whenReady().then(() => {
   setupIpcHandlers();
   createWindow();
 
-  app.on('activate', () => {
+  app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
-app.on('window-all-closed', () => {
+app.on("window-all-closed", () => {
   if (coreService) {
     coreService.destroy();
   }
-  if (process.platform !== 'darwin') {
+  if (process.platform !== "darwin") {
     app.quit();
   }
 });

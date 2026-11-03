@@ -1,10 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { Shield, Search, Minus, Square, Copy, X, Cpu, Sun, Moon } from 'lucide-react';
-import { useAppStore } from '../../stores/useAppStore';
-import { GlassBadge, GlassButton } from '../glass';
+import React, { useEffect, useState } from "react";
+import {
+  Shield,
+  Search,
+  Minus,
+  Square,
+  Copy,
+  X,
+  Sun,
+  Moon,
+} from "lucide-react";
+import { useAppStore } from "../../stores/useAppStore";
 
 export const TitleBar: React.FC = () => {
-  const { overview, setIsCommandPaletteOpen, theme, toggleTheme } = useAppStore();
+  const { overview, setIsCommandPaletteOpen, theme, toggleTheme } =
+    useAppStore();
   const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
@@ -21,49 +30,49 @@ export const TitleBar: React.FC = () => {
   const handleClose = () => window.sentinelAPI?.closeWindow();
 
   return (
-    <header className="titlebar-drag-region h-12 w-full bg-[var(--glass-surface)] backdrop-blur-2xl backdrop-saturate-180 border-b border-[var(--glass-border)] flex items-center justify-between px-3.5 z-50 select-none shadow-[var(--glass-specular)]">
+    <header className="titlebar-drag-region h-12 w-full bg-white/70 dark:bg-black/25 backdrop-blur-3xl backdrop-saturate-200 border-b border-black/[0.08] dark:border-white/10 flex items-center justify-between px-3.5 z-50 select-none shadow-sm dark:shadow-md dark:shadow-black/20">
       {/* Left: Branding & Host Info */}
       <div className="flex items-center gap-3 no-drag">
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/25 border border-white/20">
+          <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20 border border-white/30">
             <Shield className="w-3.5 h-3.5 text-white" />
           </div>
-          <span className="font-bold text-xs tracking-wider text-[var(--text-primary)] font-mono">
-            SENTINEL<span className="text-cyan-400">.DESKTOP</span>
+          <span className="font-bold text-xs tracking-wider font-mono text-slate-900 dark:text-white">
+            SENTINEL
+            <span className="text-cyan-600 dark:text-cyan-400 drop-shadow-sm dark:drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">
+              .DESKTOP
+            </span>
           </span>
         </div>
 
-        <div className="h-4 w-px bg-[var(--glass-border)]" />
-
         {/* Machine Name Badge */}
-        <GlassBadge variant="default" size="sm" className="hidden sm:inline-flex items-center gap-1.5 font-mono">
-          <Cpu className="w-3 h-3 text-cyan-400" />
-          <span>{overview?.hostname || 'LOCAL-NODE'}</span>
-          <span className="text-[var(--text-tertiary)]">•</span>
-          <span className="text-[var(--text-secondary)]">{overview?.osName?.split(' ')[0] || 'Windows'}</span>
-        </GlassBadge>
+        <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/10 text-slate-700 dark:text-white/70 text-[10px] font-mono backdrop-blur-md">
+          <span>
+            {overview?.hostname
+              ? `${overview.hostname}-Microsoft`
+              : "DESKTOP-IZBACDH-Microsoft"}
+          </span>
+        </div>
 
-        {/* Privilege Indicator */}
-        <GlassBadge
-          variant={overview?.isElevated ? 'success' : 'default'}
-          size="sm"
-          dot
-          pulsing={Boolean(overview?.isElevated)}
-        >
-          {overview?.isElevated ? 'ELEVATED' : 'USER'}
-        </GlassBadge>
+        {/* Privilege Indicator Pill */}
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/10 text-slate-700 dark:text-white/80 text-[10px] font-mono backdrop-blur-md">
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${overview?.isElevated ? "bg-emerald-500 dark:bg-emerald-400 animate-pulse" : "bg-slate-400 dark:bg-white/60"}`}
+          />
+          <span>{overview?.isElevated ? "ELEVATED" : "USER"}</span>
+        </div>
       </div>
 
-      {/* Center: Search / Command Palette Floating Pill */}
+      {/* Center: Search / Command Palette Floating Glass Pill */}
       <button
         onClick={() => setIsCommandPaletteOpen(true)}
-        className="no-drag flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-[var(--glass-surface-subtle)] hover:bg-[var(--glass-surface-elevated)] border border-[var(--glass-border)] hover:border-[var(--glass-border-hover)] text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all duration-200 w-64 md:w-80 justify-between shadow-sm shadow-[var(--glass-specular)] cursor-pointer group"
+        className="no-drag flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black/[0.04] hover:bg-black/[0.07] dark:bg-white/[0.04] dark:hover:bg-white/[0.08] backdrop-blur-2xl border border-black/[0.08] hover:border-black/[0.15] dark:border-white/10 dark:hover:border-white/20 text-xs text-slate-500 hover:text-slate-800 dark:text-white/50 dark:hover:text-white/80 transition-all duration-200 w-72 md:w-88 justify-between shadow-inner cursor-pointer group"
       >
         <span className="flex items-center gap-2 truncate">
-          <Search className="w-3.5 h-3.5 text-[var(--text-tertiary)] group-hover:text-cyan-400 transition-colors" />
+          <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-600 dark:text-white/40 dark:group-hover:text-cyan-400 transition-colors" />
           <span className="truncate">Search commands, processes, ports...</span>
         </span>
-        <kbd className="px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/10 text-[10px] font-mono border border-[var(--glass-border-subtle)] text-[var(--text-secondary)]">
+        <kbd className="px-1.5 py-0.5 rounded-md bg-black/[0.06] dark:bg-white/10 text-[10px] font-mono border border-black/[0.08] dark:border-white/10 text-slate-600 dark:text-white/60">
           Ctrl K
         </kbd>
       </button>
@@ -73,33 +82,41 @@ export const TitleBar: React.FC = () => {
         {/* Light / Dark Mode Liquid Glass Toggle */}
         <button
           onClick={toggleTheme}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-surface-elevated)] border border-transparent hover:border-[var(--glass-border)] transition-all cursor-pointer"
-          title={`Switch to ${theme === 'dark' ? 'Light Frosted' : 'Dark Liquid'} Glass`}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/10 border border-transparent hover:border-black/[0.08] dark:hover:border-white/10 transition-all cursor-pointer"
+          title={`Switch to ${theme === "dark" ? "Light Frosted" : "Dark Liquid"} Glass`}
         >
-          {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-300" /> : <Moon className="w-3.5 h-3.5 text-blue-500" />}
+          {theme === "dark" ? (
+            <Sun className="w-3.5 h-3.5 text-amber-300" />
+          ) : (
+            <Moon className="w-3.5 h-3.5 text-blue-600" />
+          )}
         </button>
 
-        <div className="h-4 w-px bg-[var(--glass-border)]" />
+        <div className="h-4 w-px bg-black/[0.08] dark:bg-white/10" />
 
         {/* Window Controls */}
         <div className="flex items-center gap-1">
           <button
             onClick={handleMinimize}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/10 transition-colors cursor-pointer"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/10 transition-colors cursor-pointer"
             title="Minimize"
           >
             <Minus className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleMaximize}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/10 transition-colors cursor-pointer"
-            title={isMaximized ? 'Restore' : 'Maximize'}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/10 transition-colors cursor-pointer"
+            title={isMaximized ? "Restore" : "Maximize"}
           >
-            {isMaximized ? <Copy className="w-3 h-3" /> : <Square className="w-3 h-3" />}
+            {isMaximized ? (
+              <Copy className="w-3 h-3" />
+            ) : (
+              <Square className="w-3 h-3" />
+            )}
           </button>
           <button
             onClick={handleClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:text-white hover:bg-red-500/80 transition-colors cursor-pointer"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 dark:text-white/60 hover:text-white hover:bg-red-500 transition-colors cursor-pointer"
             title="Close"
           >
             <X className="w-3.5 h-3.5" />

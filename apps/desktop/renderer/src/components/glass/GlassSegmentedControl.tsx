@@ -1,6 +1,6 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { cn } from './utils';
+import React from "react";
+import { motion } from "framer-motion";
+import { cn } from "./utils";
 
 export interface SegmentOption<T extends string> {
   value: T;
@@ -12,7 +12,7 @@ export interface GlassSegmentedControlProps<T extends string> {
   options: SegmentOption<T>[];
   value: T;
   onChange: (value: T) => void;
-  size?: 'sm' | 'md';
+  size?: "sm" | "md";
   className?: string;
 }
 
@@ -20,7 +20,7 @@ export function GlassSegmentedControl<T extends string>({
   options,
   value,
   onChange,
-  size = 'md',
+  size = "md",
   className,
 }: GlassSegmentedControlProps<T>) {
   const controlId = React.useId();
@@ -28,9 +28,9 @@ export function GlassSegmentedControl<T extends string>({
   return (
     <div
       className={cn(
-        'inline-flex items-center p-1 rounded-xl relative select-none',
-        'bg-[var(--glass-surface-subtle)] backdrop-blur-md border border-[var(--glass-border-subtle)] shadow-inner',
-        className
+        "inline-flex items-center p-1 rounded-xl relative select-none",
+        "bg-black/[0.04] dark:bg-white/[0.04] backdrop-blur-xl border border-black/[0.08] dark:border-white/10 shadow-inner",
+        className,
       )}
     >
       {options.map((option) => {
@@ -42,22 +42,24 @@ export function GlassSegmentedControl<T extends string>({
             type="button"
             onClick={() => onChange(option.value)}
             className={cn(
-              'relative z-10 font-mono transition-colors duration-150 flex items-center justify-center gap-1.5 cursor-pointer',
-              size === 'sm' ? 'px-2.5 py-1 text-[11px]' : 'px-3.5 py-1.5 text-xs',
+              "relative z-10 font-mono transition-colors duration-150 flex items-center justify-center gap-1.5 cursor-pointer",
+              size === "sm"
+                ? "px-2.5 py-1 text-[11px]"
+                : "px-3.5 py-1.5 text-xs",
               isSelected
-                ? 'text-cyan-400 font-semibold'
-                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                ? "text-cyan-800 dark:text-cyan-300 font-semibold"
+                : "text-slate-600 hover:text-slate-900 dark:text-white/60 dark:hover:text-white",
             )}
           >
             {isSelected && (
               <motion.div
                 layoutId={`segmented-active-${controlId}`}
-                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                className="absolute inset-0 rounded-lg bg-[var(--glass-surface-elevated)] border border-[var(--glass-border)] shadow-[var(--glass-shadow-soft)] -z-10"
+                transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                className="absolute inset-0 rounded-lg bg-white/90 dark:bg-white/15 border border-black/[0.08] dark:border-white/20 shadow-sm dark:shadow-[var(--glass-shadow-soft)] -z-10"
               >
                 {/* Specular Edge Highlight on active pill */}
                 <div
-                  className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                  className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/80 dark:via-white/30 to-transparent"
                   aria-hidden="true"
                 />
               </motion.div>
@@ -71,4 +73,3 @@ export function GlassSegmentedControl<T extends string>({
     </div>
   );
 }
-
