@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import {
-  Shield,
   Search,
   Minus,
   Square,
@@ -9,6 +8,7 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
+import appIcon from "../../../assets/icon.png";
 import { useAppStore } from "../../stores/useAppStore";
 
 export const TitleBar: React.FC = () => {
@@ -39,8 +39,12 @@ export const TitleBar: React.FC = () => {
       {/* Left: Branding & Host Info */}
       <div className="flex items-center gap-3 no-drag">
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20 border border-white/30">
-            <Shield className="w-3.5 h-3.5 text-white" />
+          <div className="relative w-6 h-6 rounded-lg overflow-hidden shadow-md shadow-cyan-500/20 border border-black/10 dark:border-white/20 shrink-0">
+            <img
+              src={appIcon}
+              alt="Sentinel Desktop Icon"
+              className="w-full h-full object-cover select-none pointer-events-none"
+            />
           </div>
           <span className="font-bold text-xs tracking-wider font-mono text-slate-900 dark:text-white">
             SENTINEL

@@ -1,8 +1,15 @@
-import { app, BrowserWindow, ipcMain, shell, session } from "electron";
+import { app, BrowserWindow, ipcMain, shell, session, nativeImage } from "electron";
 import { join } from "path";
+import { existsSync } from "fs";
 import { SentinelCoreService } from "@sentinel/core";
 import { IPC_CHANNELS } from "@sentinel/contracts";
 import { defaultLogger } from "@sentinel/logger";
+
+// Set application identity early so Windows OS process, taskbar grouping, and Task Manager register as Sentinel Desktop
+app.name = "Sentinel Desktop";
+if (process.platform === "win32") {
+  app.setAppUserModelId("com.sentinel.desktop");
+}
 
 // Transparent visual support for Linux X11 environments if applicable
 if (process.platform === "linux") {
@@ -25,7 +32,37 @@ process.on("unhandledRejection", (reason) => {
 let mainWindow: BrowserWindow | null = null;
 let coreService: SentinelCoreService | null = null;
 
+function resolveAppIconPath(): string | undefined {
+  const icoCandidates = [
+    join(__dirname, "../../resources/icon.ico"),
+    join(__dirname, "../../build/icon.ico"),
+    join(app.getAppPath(), "resources/icon.ico"),
+    join(app.getAppPath(), "build/icon.ico"),
+    join(process.resourcesPath, "resources/icon.ico"),
+    join(process.resourcesPath, "icon.ico"),
+  ];
+
+  const pngCandidates = [
+    join(__dirname, "../../renderer/assets/icon.png"),
+    join(__dirname, "../../resources/icon.png"),
+    join(app.getAppPath(), "renderer/assets/icon.png"),
+    join(app.getAppPath(), "resources/icon.png"),
+    join(process.resourcesPath, "resources/icon.png"),
+    join(process.resourcesPath, "icon.png"),
+  ];
+
+  const candidates =
+    process.platform === "win32"
+      ? [...icoCandidates, ...pngCandidates]
+      : [...pngCandidates, ...icoCandidates];
+
+  return candidates.find((filePath) => existsSync(filePath));
+}
+
 function createWindow(): void {
+  const iconPath = resolveAppIconPath();
+  const iconImage = iconPath ? nativeImage.createFromPath(iconPath) : undefined;
+
   mainWindow = new BrowserWindow({
     width: 1360,
     height: 880,
@@ -39,6 +76,7 @@ function createWindow(): void {
     // Note: Do NOT set backgroundMaterial: "acrylic" on Windows with transparent: true & custom CSS rounded corners.
     // DWM renders a rectangular acrylic brush over the entire HWND, producing square gray corner artifacts outside the CSS border radius.
     title: "Sentinel Desktop",
+    icon: iconPath || iconImage,
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, "../preload/index.js"),
@@ -47,6 +85,18 @@ function createWindow(): void {
       nodeIntegration: false,
     },
   });
+
+  if (iconPath) {
+    try {
+      mainWindow.setIcon(iconPath);
+    } catch (e) {
+      defaultLogger.warn({ err: e }, "Failed to explicitly set window icon");
+    }
+  }
+
+  if (process.platform === "darwin" && iconImage && !iconImage.isEmpty()) {
+    app.dock?.setIcon(iconImage);
+  }
 
   mainWindow.on("ready-to-show", () => {
     mainWindow?.show();
@@ -211,6 +261,10 @@ function setupIpcHandlers(): void {
 }
 
 app.whenReady().then(() => {
+  if (process.platform === "win32") {
+    app.setAppUserModelId("com.sentinel.desktop");
+  }
+
   setupIpcHandlers();
   createWindow();
 

@@ -1,11 +1,13 @@
 {
   "name": "@sentinel/desktop",
+  "productName": "Sentinel Desktop",
+  "description": "Sentinel Desktop - System Resource Monitor & Cybersecurity Workstation",
   "version": "1.0.0",
   "private": true,
   "main": "./out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
-    "dev:debug": "electron-vite dev --inspect=9229 --remoteDebuggingPort=9222 --sourcemap",
+    "dev": "node ../../scripts/patch-electron-icon.js && electron-vite dev",
+    "dev:debug": "node ../../scripts/patch-electron-icon.js && electron-vite dev --inspect=9229 --remoteDebuggingPort=9222 --sourcemap",
     "build": "electron-vite build",
     "typecheck": "tsc --noEmit",
     "start": "electron ."

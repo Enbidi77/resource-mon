@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Settings, Shield, Sliders, Database, Sparkles, Sun, Moon } from 'lucide-react';
+import { Settings, Shield, Sliders, Database, Sparkles, Sun, Moon, Info } from 'lucide-react';
+import appIcon from '../../assets/icon.png';
 import { useMetricsStore } from '../stores/useMetricsStore';
 import { useAppStore, type AppTheme } from '../stores/useAppStore';
 import {
@@ -183,6 +184,30 @@ export const SettingsPage: React.FC = () => {
           </div>
         </GlassCard>
       </div>
+
+      {/* About Sentinel Desktop */}
+      <GlassCard className="p-5 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg shadow-cyan-500/20 border border-black/10 dark:border-white/20 shrink-0">
+            <img
+              src={appIcon}
+              alt="Sentinel Desktop"
+              className="w-full h-full object-cover select-none pointer-events-none"
+            />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-sm text-[var(--text-primary)] font-mono">
+                Sentinel Desktop Workstation
+              </h3>
+              <GlassBadge variant="cyan" size="sm">v1.0.0 Enterprise</GlassBadge>
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+              High-performance Win32 hardware telemetry & cybersecurity monitoring engine with Apple Glass UI
+            </p>
+          </div>
+        </div>
+      </GlassCard>
 
       {/* Workstation Diagnostics & Architecture */}
       <GlassCard className="p-5 space-y-3">
