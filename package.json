@@ -12,11 +12,13 @@
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
-    "postinstall": "node scripts/patch-electron-icon.js"
+    "postinstall": "node scripts/patch-electron-icon.js",
+    "release:appx": "node scripts/release-appx.js"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "electron": "32.3.3",
+    "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
     "prettier": "^3.5.3",
     "rcedit": "^5.0.2",

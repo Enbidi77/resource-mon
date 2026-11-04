@@ -9,6 +9,7 @@
     "dev": "node ../../scripts/patch-electron-icon.js && electron-vite dev",
     "dev:debug": "node ../../scripts/patch-electron-icon.js && electron-vite dev --inspect=9229 --remoteDebuggingPort=9222 --sourcemap",
     "build": "electron-vite build",
+    "release:appx": "node ../../scripts/release-appx.js",
     "typecheck": "tsc --noEmit",
     "start": "electron ."
   },

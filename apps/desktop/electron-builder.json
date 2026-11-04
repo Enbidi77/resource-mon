@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.sentinel.desktop",
+  "productName": "Sentinel Desktop",
+  "directories": {
+    "output": "../../release",
+    "buildResources": "build"
+  },
+  "files": [
+    "out/**/*",
+    "resources/**/*",
+    "package.json"
+  ],
+  "asar": true,
+  "asarUnpack": [
+    "**/node_modules/koffi/**",
+    "**/node_modules/better-sqlite3/**"
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "appx",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "icon": "resources/icon.ico"
+  },
+  "appx": {
+    "identityName": "SentinelSecurity.SentinelDesktop",
+    "publisher": "CN=00000000-0000-0000-0000-000000000000",
+    "publisherDisplayName": "Sentinel Security",
+    "applicationId": "SentinelDesktop",
+    "backgroundColor": "#070913",
+    "showNameOnTiles": true,
+    "addAutoLaunchExtension": false
+  }
+}
