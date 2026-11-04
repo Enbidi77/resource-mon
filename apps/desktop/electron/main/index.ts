@@ -100,7 +100,7 @@ function setupIpcHandlers(): void {
 
   ipcMain.handle(
     IPC_CHANNELS.SYSTEM_TOGGLE_STREAM,
-    (_e, { enabled, intervalMs }) => {
+    (_e, enabled: boolean, intervalMs?: number) => {
       return coreService?.toggleMetricsStream(enabled, intervalMs);
     },
   );

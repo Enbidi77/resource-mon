@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import type { SystemMetricsSnapshot } from '@sentinel/contracts';
+import { create } from "zustand";
+import type { SystemMetricsSnapshot } from "@sentinel/contracts";
 
 interface MetricPoint {
   time: string;
@@ -31,11 +31,18 @@ export const useMetricsStore = create<MetricsState>((set, get) => ({
   intervalMs: 1000,
 
   setCurrentMetrics: (snapshot: SystemMetricsSnapshot) => {
-    const timeStr = new Date(snapshot.timestamp).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
+    const d = new Date(snapshot.timestamp);
+    const baseTime = d.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
+
+    const currentInterval = get().intervalMs;
+    const timeStr =
+      currentInterval < 1000
+        ? `${baseTime}.${Math.floor(d.getMilliseconds() / 100)}`
+        : baseTime;
 
     const newPoint: MetricPoint = {
       time: timeStr,
@@ -49,9 +56,11 @@ export const useMetricsStore = create<MetricsState>((set, get) => ({
     };
 
     set((state) => {
+      // Dynamic history capacity ensures ~30s rolling time window regardless of polling rate
+      const dynamicLimit = Math.max(30, Math.round(30000 / state.intervalMs));
       const updated = [...state.history, newPoint];
-      if (updated.length > state.maxPoints) {
-        updated.shift();
+      if (updated.length > dynamicLimit) {
+        updated.splice(0, updated.length - dynamicLimit);
       }
       return {
         current: snapshot,
@@ -74,4 +83,3 @@ export const useMetricsStore = create<MetricsState>((set, get) => ({
     }
   },
 }));
-

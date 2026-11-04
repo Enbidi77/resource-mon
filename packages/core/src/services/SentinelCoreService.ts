@@ -1,11 +1,15 @@
-import { AdapterFactory, ISystemAdapter } from '@sentinel/system-adapter';
-import { SystemCollector } from '@sentinel/monitoring';
-import { SecurityEngine } from '@sentinel/security';
-import { SentinelDatabase } from '@sentinel/storage';
-import { EventLogReader } from '../events/EventLogReader.js';
-import { ReportGenerator } from '../reports/ReportGenerator.js';
-import { Kernel32Bridge, Advapi32Bridge, AuthenticodeVerifier } from '@sentinel/native-bridge';
-import { defaultLogger } from '@sentinel/logger';
+import { AdapterFactory, ISystemAdapter } from "@sentinel/system-adapter";
+import { SystemCollector } from "@sentinel/monitoring";
+import { SecurityEngine } from "@sentinel/security";
+import { SentinelDatabase } from "@sentinel/storage";
+import { EventLogReader } from "../events/EventLogReader.js";
+import { ReportGenerator } from "../reports/ReportGenerator.js";
+import {
+  Kernel32Bridge,
+  Advapi32Bridge,
+  AuthenticodeVerifier,
+} from "@sentinel/native-bridge";
+import { defaultLogger } from "@sentinel/logger";
 import type {
   SystemOverview,
   SystemMetricsSnapshot,
@@ -28,7 +32,7 @@ import type {
   QueryEventsRequest,
   ReportConfig,
   GeneratedReport,
-} from '@sentinel/contracts';
+} from "@sentinel/contracts";
 
 export class SentinelCoreService {
   private adapter: ISystemAdapter;
@@ -70,7 +74,9 @@ export class SentinelCoreService {
     return this.collector.getLatestSnapshot();
   }
 
-  public onSystemMetrics(callback: (snapshot: SystemMetricsSnapshot) => void): () => void {
+  public onSystemMetrics(
+    callback: (snapshot: SystemMetricsSnapshot) => void,
+  ): () => void {
     return this.collector.subscribe(callback);
   }
 
@@ -86,6 +92,10 @@ export class SentinelCoreService {
     return true;
   }
 
+  public setIntervalMs(intervalMs: number): void {
+    this.collector.setIntervalMs(intervalMs);
+  }
+
   public async getProcesses(): Promise<ProcessInfo[]> {
     const list = await this.adapter.getProcesses();
     return list;
@@ -95,13 +105,15 @@ export class SentinelCoreService {
     return this.adapter.getProcessDetails(pid);
   }
 
-  public async controlProcess(req: ProcessActionRequest): Promise<ProcessActionResult> {
-    if (req.action === 'terminate') {
+  public async controlProcess(
+    req: ProcessActionRequest,
+  ): Promise<ProcessActionResult> {
+    if (req.action === "terminate") {
       const res = await this.kernel32.terminateProcess(req.pid);
       return {
         success: res.success,
         pid: req.pid,
-        action: 'terminate',
+        action: "terminate",
         error: res.error,
       };
     }
@@ -109,15 +121,19 @@ export class SentinelCoreService {
       success: false,
       pid: req.pid,
       action: req.action,
-      error: 'Action not supported natively',
+      error: "Action not supported natively",
     };
   }
 
-  public async verifyProcessSignature(filePath: string): Promise<{ status: string; signer?: string | null }> {
+  public async verifyProcessSignature(
+    filePath: string,
+  ): Promise<{ status: string; signer?: string | null }> {
     return this.verifier.verifySignature(filePath);
   }
 
-  public async computeProcessHash(filePath: string): Promise<{ sha256?: string | null; error?: string }> {
+  public async computeProcessHash(
+    filePath: string,
+  ): Promise<{ sha256?: string | null; error?: string }> {
     try {
       const sha256 = await this.verifier.computeFileSha256(filePath);
       return { sha256 };
@@ -138,7 +154,9 @@ export class SentinelCoreService {
     return this.adapter.getServices();
   }
 
-  public async controlService(req: ServiceControlRequest): Promise<ServiceControlResult> {
+  public async controlService(
+    req: ServiceControlRequest,
+  ): Promise<ServiceControlResult> {
     const res = await this.advapi32.controlService(req.serviceName, req.action);
     return {
       success: res.success,
@@ -190,14 +208,15 @@ export class SentinelCoreService {
   }
 
   public async generateReport(config: ReportConfig): Promise<GeneratedReport> {
-    const [overview, metrics, processes, connections, alerts, hardware] = await Promise.all([
-      config.includeMetrics ? this.getOverview() : undefined,
-      config.includeMetrics ? this.getMetricsSnapshot() : undefined,
-      config.includeProcesses ? this.getProcesses() : undefined,
-      config.includeNetwork ? this.getNetworkConnections() : undefined,
-      config.includeSecurity ? this.getSecurityAlerts() : undefined,
-      config.includeHardware ? this.getHardwareSummary() : undefined,
-    ]);
+    const [overview, metrics, processes, connections, alerts, hardware] =
+      await Promise.all([
+        config.includeMetrics ? this.getOverview() : undefined,
+        config.includeMetrics ? this.getMetricsSnapshot() : undefined,
+        config.includeProcesses ? this.getProcesses() : undefined,
+        config.includeNetwork ? this.getNetworkConnections() : undefined,
+        config.includeSecurity ? this.getSecurityAlerts() : undefined,
+        config.includeHardware ? this.getHardwareSummary() : undefined,
+      ]);
 
     return this.reportGen.generate(config, {
       overview,
@@ -220,7 +239,7 @@ export class SentinelCoreService {
         this.database.recordAlert(alert);
       }
     } catch (err) {
-      defaultLogger.debug({ err }, 'Background security audit cycle note');
+      defaultLogger.debug({ err }, "Background security audit cycle note");
     }
   }
 
