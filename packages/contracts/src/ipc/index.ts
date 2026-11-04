@@ -1,74 +1,74 @@
-import type { SystemOverview, SystemMetricsSnapshot } from '../system/index.js';
+import type { SystemOverview, SystemMetricsSnapshot } from "../system/index.js";
 import type {
   ProcessInfo,
   ProcessDetail,
   ProcessActionRequest,
   ProcessActionResult,
-} from '../process/index.js';
-import type { NetworkConnection, NetworkInterface } from '../network/index.js';
+} from "../process/index.js";
+import type { NetworkConnection, NetworkInterface } from "../network/index.js";
 import type {
   SecurityAlert,
   SecurityPosture,
   FimScanResult,
   SecurityAuditReport,
   BinaryAnalysisResult,
-} from '../security/index.js';
+} from "../security/index.js";
 import type {
   WindowsService,
   ServiceControlRequest,
   ServiceControlResult,
-} from '../services/index.js';
+} from "../services/index.js";
 import type {
   WindowsEventLogEntry,
   QueryEventsRequest,
-} from '../events/index.js';
-import type { HardwareSummary } from '../hardware/index.js';
-import type { ReportConfig, GeneratedReport } from '../reports/index.js';
+} from "../events/index.js";
+import type { HardwareSummary } from "../hardware/index.js";
+import type { ReportConfig, GeneratedReport } from "../reports/index.js";
 
 export const IPC_CHANNELS = {
   // System & Realtime Metrics
-  SYSTEM_GET_OVERVIEW: 'sentinel:system:get-overview',
-  SYSTEM_GET_METRICS: 'sentinel:system:get-metrics',
-  SYSTEM_STREAM_METRICS: 'sentinel:stream:system-metrics',
-  SYSTEM_TOGGLE_STREAM: 'sentinel:stream:toggle-metrics',
+  SYSTEM_GET_OVERVIEW: "sentinel:system:get-overview",
+  SYSTEM_GET_METRICS: "sentinel:system:get-metrics",
+  SYSTEM_STREAM_METRICS: "sentinel:stream:system-metrics",
+  SYSTEM_TOGGLE_STREAM: "sentinel:stream:toggle-metrics",
 
   // Process Management
-  PROCESS_LIST: 'sentinel:processes:list',
-  PROCESS_GET_DETAILS: 'sentinel:processes:get-details',
-  PROCESS_CONTROL: 'sentinel:processes:control',
-  PROCESS_VERIFY_SIGNATURE: 'sentinel:processes:verify-signature',
-  PROCESS_COMPUTE_HASH: 'sentinel:processes:compute-hash',
+  PROCESS_LIST: "sentinel:processes:list",
+  PROCESS_GET_DETAILS: "sentinel:processes:get-details",
+  PROCESS_CONTROL: "sentinel:processes:control",
+  PROCESS_VERIFY_SIGNATURE: "sentinel:processes:verify-signature",
+  PROCESS_COMPUTE_HASH: "sentinel:processes:compute-hash",
 
   // Network & Connections
-  NETWORK_GET_CONNECTIONS: 'sentinel:network:get-connections',
-  NETWORK_GET_INTERFACES: 'sentinel:network:get-interfaces',
+  NETWORK_GET_CONNECTIONS: "sentinel:network:get-connections",
+  NETWORK_GET_INTERFACES: "sentinel:network:get-interfaces",
 
   // Windows Services
-  SERVICES_LIST: 'sentinel:services:list',
-  SERVICES_CONTROL: 'sentinel:services:control',
+  SERVICES_LIST: "sentinel:services:list",
+  SERVICES_CONTROL: "sentinel:services:control",
 
   // Security & FIM
-  SECURITY_GET_POSTURE: 'sentinel:security:get-posture',
-  SECURITY_GET_ALERTS: 'sentinel:security:get-alerts',
-  SECURITY_RUN_FIM_SCAN: 'sentinel:security:run-fim-scan',
-  SECURITY_DISMISS_ALERT: 'sentinel:security:dismiss-alert',
-  SECURITY_RUN_AUDIT: 'sentinel:security:run-audit',
-  SECURITY_ANALYZE_BINARY: 'sentinel:security:analyze-binary',
+  SECURITY_GET_POSTURE: "sentinel:security:get-posture",
+  SECURITY_GET_ALERTS: "sentinel:security:get-alerts",
+  SECURITY_RUN_FIM_SCAN: "sentinel:security:run-fim-scan",
+  SECURITY_DISMISS_ALERT: "sentinel:security:dismiss-alert",
+  SECURITY_RUN_AUDIT: "sentinel:security:run-audit",
+  SECURITY_ANALYZE_BINARY: "sentinel:security:analyze-binary",
 
   // Windows Event Viewer
-  EVENTS_QUERY: 'sentinel:events:query',
+  EVENTS_QUERY: "sentinel:events:query",
 
   // Hardware Inspector
-  HARDWARE_GET_SUMMARY: 'sentinel:hardware:get-summary',
+  HARDWARE_GET_SUMMARY: "sentinel:hardware:get-summary",
 
   // Reports & Export
-  REPORTS_GENERATE: 'sentinel:reports:generate',
+  REPORTS_GENERATE: "sentinel:reports:generate",
 
   // Window Controls
-  WINDOW_MINIMIZE: 'sentinel:window:minimize',
-  WINDOW_MAXIMIZE: 'sentinel:window:maximize',
-  WINDOW_CLOSE: 'sentinel:window:close',
-  WINDOW_IS_MAXIMIZED: 'sentinel:window:is-maximized',
+  WINDOW_MINIMIZE: "sentinel:window:minimize",
+  WINDOW_MAXIMIZE: "sentinel:window:maximize",
+  WINDOW_CLOSE: "sentinel:window:close",
+  WINDOW_IS_MAXIMIZED: "sentinel:window:is-maximized",
 } as const;
 
 export type IpcChannelName = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
@@ -89,7 +89,7 @@ export interface ISentinelAPI {
   getSystemMetrics: () => Promise<SystemMetricsSnapshot>;
   onSystemMetrics: (
     callback: (metrics: SystemMetricsSnapshot) => void,
-  ) => () => void;
+  ) => (() => void) & Disposable;
   toggleMetricsStream: (
     enabled: boolean,
     intervalMs?: number,

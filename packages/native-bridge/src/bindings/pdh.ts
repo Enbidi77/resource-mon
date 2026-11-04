@@ -1,6 +1,6 @@
-import koffi from 'koffi';
-import { NativeLibraryLoader, promisifyKoffi } from '../koffi/loader.js';
-import { defaultLogger } from '@sentinel/logger';
+import koffi from "koffi";
+import { NativeLibraryLoader, promisifyKoffi } from "../koffi/loader.js";
+import { defaultLogger } from "@sentinel/logger";
 
 export interface Win32DiskIo {
   readBytesPerSec: number;
@@ -9,7 +9,7 @@ export interface Win32DiskIo {
 
 let cachedPdhCounterValueStruct: any = null;
 
-export class PdhBridge {
+export class PdhBridge implements Disposable, AsyncDisposable {
   private pdh: any = null;
 
   // Synchronous handles
@@ -34,7 +34,7 @@ export class PdhBridge {
     const loader = NativeLibraryLoader.getInstance();
     if (!loader.isAvailable()) return;
 
-    this.pdh = loader.getLib('pdh.dll');
+    this.pdh = loader.getLib("pdh.dll");
     if (!this.pdh) return;
 
     try {
@@ -45,9 +45,9 @@ export class PdhBridge {
          * - CStatus: Counter status code (0 = PDH_CSTATUS_VALID_DATA).
          * - doubleValue: The computed 64-bit double-precision floating-point metric value.
          */
-        cachedPdhCounterValueStruct = koffi.struct('PDH_FMT_COUNTERVALUE', {
-          CStatus: 'uint32',
-          doubleValue: 'double',
+        cachedPdhCounterValueStruct = koffi.struct("PDH_FMT_COUNTERVALUE", {
+          CStatus: "uint32",
+          doubleValue: "double",
         });
       }
       this.counterValueStruct = cachedPdhCounterValueStruct;
@@ -61,7 +61,7 @@ export class PdhBridge {
        * @returns PDH_STATUS (0 = ERROR_SUCCESS).
        */
       this.PdhOpenQueryWFn = this.pdh.func(
-        'int __stdcall PdhOpenQueryW(str16 szDataSource, uintptr_t dwUserData, _Out_ intptr_t* phQuery)'
+        "int __stdcall PdhOpenQueryW(str16 szDataSource, uintptr_t dwUserData, _Out_ intptr_t* phQuery)",
       );
 
       /**
@@ -75,7 +75,7 @@ export class PdhBridge {
        * @returns PDH_STATUS (0 = ERROR_SUCCESS).
        */
       this.PdhAddEnglishCounterWFn = this.pdh.func(
-        'int __stdcall PdhAddEnglishCounterW(intptr_t hQuery, str16 szFullCounterPath, uintptr_t dwUserData, _Out_ intptr_t* phCounter)'
+        "int __stdcall PdhAddEnglishCounterW(intptr_t hQuery, str16 szFullCounterPath, uintptr_t dwUserData, _Out_ intptr_t* phCounter)",
       );
 
       /**
@@ -86,7 +86,7 @@ export class PdhBridge {
        * @returns PDH_STATUS (0 = ERROR_SUCCESS).
        */
       this.PdhCollectQueryDataFn = this.pdh.func(
-        'int __stdcall PdhCollectQueryData(intptr_t hQuery)'
+        "int __stdcall PdhCollectQueryData(intptr_t hQuery)",
       );
 
       /**
@@ -99,7 +99,7 @@ export class PdhBridge {
        * @returns PDH_STATUS (0 = ERROR_SUCCESS).
        */
       this.PdhGetFormattedCounterValueFn = this.pdh.func(
-        'int __stdcall PdhGetFormattedCounterValue(intptr_t hCounter, uint32 dwFormat, _Out_ uint32* lpdwType, _Inout_ PDH_FMT_COUNTERVALUE* pValue)'
+        "int __stdcall PdhGetFormattedCounterValue(intptr_t hCounter, uint32 dwFormat, _Out_ uint32* lpdwType, _Inout_ PDH_FMT_COUNTERVALUE* pValue)",
       );
 
       /**
@@ -109,13 +109,17 @@ export class PdhBridge {
        * @returns PDH_STATUS (0 = ERROR_SUCCESS).
        */
       this.PdhCloseQueryFn = this.pdh.func(
-        'int __stdcall PdhCloseQuery(intptr_t hQuery)'
+        "int __stdcall PdhCloseQuery(intptr_t hQuery)",
       );
 
       // Promisified asynchronous non-blocking versions:
       // Offload Win32 C calls to libuv worker threads via Koffi's .async to keep the event loop responsive.
-      this.PdhCollectQueryDataAsync = promisifyKoffi<number>(this.PdhCollectQueryDataFn);
-      this.PdhGetFormattedCounterValueAsync = promisifyKoffi<number>(this.PdhGetFormattedCounterValueFn);
+      this.PdhCollectQueryDataAsync = promisifyKoffi<number>(
+        this.PdhCollectQueryDataFn,
+      );
+      this.PdhGetFormattedCounterValueAsync = promisifyKoffi<number>(
+        this.PdhGetFormattedCounterValueFn,
+      );
       this.PdhCloseQueryAsync = promisifyKoffi<number>(this.PdhCloseQueryFn);
 
       // Open PDH query and attach standard English physical disk throughput counters
@@ -123,15 +127,15 @@ export class PdhBridge {
       if (openStatus === 0 && this.hQuery[0]) {
         const readStatus = this.PdhAddEnglishCounterWFn(
           this.hQuery[0],
-          '\\PhysicalDisk(_Total)\\Disk Read Bytes/sec',
+          "\\PhysicalDisk(_Total)\\Disk Read Bytes/sec",
           0n,
-          this.hReadCounter
+          this.hReadCounter,
         );
         const writeStatus = this.PdhAddEnglishCounterWFn(
           this.hQuery[0],
-          '\\PhysicalDisk(_Total)\\Disk Write Bytes/sec',
+          "\\PhysicalDisk(_Total)\\Disk Write Bytes/sec",
           0n,
-          this.hWriteCounter
+          this.hWriteCounter,
         );
 
         if (readStatus === 0 && writeStatus === 0) {
@@ -141,12 +145,12 @@ export class PdhBridge {
         } else {
           defaultLogger.warn(
             { readStatus, writeStatus },
-            'Failed to add PhysicalDisk PDH counters'
+            "Failed to add PhysicalDisk PDH counters",
           );
         }
       }
     } catch (err) {
-      defaultLogger.warn({ err }, 'Failed to bind PDH functions for Disk I/O');
+      defaultLogger.warn({ err }, "Failed to bind PDH functions for Disk I/O");
     }
   }
 
@@ -159,7 +163,10 @@ export class PdhBridge {
     }
 
     try {
-      if (!this.PdhCollectQueryDataAsync || !this.PdhGetFormattedCounterValueAsync) {
+      if (
+        !this.PdhCollectQueryDataAsync ||
+        !this.PdhGetFormattedCounterValueAsync
+      ) {
         return this.getDiskIoSync();
       }
 
@@ -178,27 +185,34 @@ export class PdhBridge {
           this.hReadCounter[0],
           0x00000200,
           dummyType,
-          valRead
+          valRead,
         ),
         this.PdhGetFormattedCounterValueAsync(
           this.hWriteCounter[0],
           0x00000200,
           dummyType,
-          valWrite
+          valWrite,
         ),
       ]);
 
       const readBytes =
-        rStatus === 0 && valRead.CStatus === 0 ? Math.max(0, Math.round(valRead.doubleValue || 0)) : 0;
+        rStatus === 0 && valRead.CStatus === 0
+          ? Math.max(0, Math.round(valRead.doubleValue || 0))
+          : 0;
       const writeBytes =
-        wStatus === 0 && valWrite.CStatus === 0 ? Math.max(0, Math.round(valWrite.doubleValue || 0)) : 0;
+        wStatus === 0 && valWrite.CStatus === 0
+          ? Math.max(0, Math.round(valWrite.doubleValue || 0))
+          : 0;
 
       return {
         readBytesPerSec: readBytes,
         writeBytesPerSec: writeBytes,
       };
     } catch (err) {
-      defaultLogger.debug({ err }, 'Error sampling PDH disk I/O asynchronously');
+      defaultLogger.debug(
+        { err },
+        "Error sampling PDH disk I/O asynchronously",
+      );
       return { readBytesPerSec: 0, writeBytesPerSec: 0 };
     }
   }
@@ -226,28 +240,78 @@ export class PdhBridge {
         this.hReadCounter[0],
         0x00000200,
         dummyType,
-        valRead
+        valRead,
       );
       const wStatus = this.PdhGetFormattedCounterValueFn(
         this.hWriteCounter[0],
         0x00000200,
         dummyType,
-        valWrite
+        valWrite,
       );
 
       const readBytes =
-        rStatus === 0 && valRead.CStatus === 0 ? Math.max(0, Math.round(valRead.doubleValue || 0)) : 0;
+        rStatus === 0 && valRead.CStatus === 0
+          ? Math.max(0, Math.round(valRead.doubleValue || 0))
+          : 0;
       const writeBytes =
-        wStatus === 0 && valWrite.CStatus === 0 ? Math.max(0, Math.round(valWrite.doubleValue || 0)) : 0;
+        wStatus === 0 && valWrite.CStatus === 0
+          ? Math.max(0, Math.round(valWrite.doubleValue || 0))
+          : 0;
 
       return {
         readBytesPerSec: readBytes,
         writeBytesPerSec: writeBytes,
       };
     } catch (err) {
-      defaultLogger.debug({ err }, 'Error sampling PDH disk I/O synchronously');
+      defaultLogger.debug({ err }, "Error sampling PDH disk I/O synchronously");
       return { readBytesPerSec: 0, writeBytesPerSec: 0 };
     }
+  }
+
+  /**
+   * Synchronous Disposable implementation.
+   * Closes active query handle and releases PDH memory deterministically.
+   */
+  public [Symbol.dispose](): void {
+    if (this.hQuery[0] && this.PdhCloseQueryFn) {
+      try {
+        this.PdhCloseQueryFn(this.hQuery[0]);
+      } catch (err) {
+        defaultLogger.debug({ err }, "Error closing PDH query synchronously");
+      }
+      this.hQuery[0] = 0n;
+      this.isInitialized = false;
+    }
+  }
+
+  /**
+   * Asynchronous AsyncDisposable implementation.
+   */
+  public async [Symbol.asyncDispose](): Promise<void> {
+    await this.dispose();
+  }
+
+  /**
+   * Synchronous Disposable implementation.
+   * Closes active query handle and releases PDH memory deterministically.
+   */
+  public [Symbol.dispose](): void {
+    if (this.hQuery[0] && this.PdhCloseQueryFn) {
+      try {
+        this.PdhCloseQueryFn(this.hQuery[0]);
+      } catch (err) {
+        defaultLogger.debug({ err }, 'Error closing PDH query synchronously');
+      }
+      this.hQuery[0] = 0n;
+      this.isInitialized = false;
+    }
+  }
+
+  /**
+   * Asynchronous AsyncDisposable implementation.
+   */
+  public async [Symbol.asyncDispose](): Promise<void> {
+    await this.dispose();
   }
 
   public async dispose(): Promise<void> {
@@ -255,7 +319,7 @@ export class PdhBridge {
       try {
         await this.PdhCloseQueryAsync(this.hQuery[0]);
       } catch (err) {
-        defaultLogger.debug({ err }, 'Error closing PDH query asynchronously');
+        defaultLogger.debug({ err }, "Error closing PDH query asynchronously");
       }
       this.hQuery[0] = 0n;
       this.isInitialized = false;
@@ -263,7 +327,7 @@ export class PdhBridge {
       try {
         this.PdhCloseQueryFn(this.hQuery[0]);
       } catch (err) {
-        defaultLogger.debug({ err }, 'Error closing PDH query');
+        defaultLogger.debug({ err }, "Error closing PDH query");
       }
       this.hQuery[0] = 0n;
       this.isInitialized = false;

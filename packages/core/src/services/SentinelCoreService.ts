@@ -10,6 +10,11 @@ import {
   AuthenticodeVerifier,
 } from "@sentinel/native-bridge";
 import { defaultLogger } from "@sentinel/logger";
+import {
+  disposeSafely,
+  disposeSafelyAsync,
+  type SubscriptionDisposable,
+} from "@sentinel/shared";
 import type {
   SystemOverview,
   SystemMetricsSnapshot,
@@ -34,13 +39,14 @@ import type {
   GeneratedReport,
 } from "@sentinel/contracts";
 
-export class SentinelCoreService {
+export class SentinelCoreService implements Disposable, AsyncDisposable {
   private adapter: ISystemAdapter;
   private collector: SystemCollector;
   private security: SecurityEngine;
   private database: SentinelDatabase;
   private eventReader: EventLogReader;
   private reportGen: ReportGenerator;
+  private isDestroyed = false;
 
   private kernel32 = new Kernel32Bridge();
   private advapi32 = new Advapi32Bridge();
@@ -76,7 +82,7 @@ export class SentinelCoreService {
 
   public onSystemMetrics(
     callback: (snapshot: SystemMetricsSnapshot) => void,
-  ): () => void {
+  ): SubscriptionDisposable {
     return this.collector.subscribe(callback);
   }
 
@@ -243,8 +249,45 @@ export class SentinelCoreService {
     }
   }
 
+  /**
+   * Synchronously terminates collectors, flushes the SQLite/WAL database,
+   * and disposes underlying system adapter handles.
+   * Idempotent: repeated calls are safely ignored.
+   */
   public destroy(): void {
-    this.collector.stop();
-    this.database.close();
+    if (this.isDestroyed) return;
+    this.isDestroyed = true;
+
+    disposeSafely(this.collector);
+    disposeSafely(this.database);
+    disposeSafely(this.adapter);
+  }
+
+  /**
+   * Asynchronously awaits completion of flushes and non-blocking teardowns.
+   */
+  public async destroyAsync(): Promise<void> {
+    if (this.isDestroyed) return;
+    this.isDestroyed = true;
+
+    disposeSafely(this.collector);
+    await disposeSafelyAsync(this.database);
+    await disposeSafelyAsync(this.adapter);
+  }
+
+  /**
+   * Synchronous Disposable interface implementation.
+   * Supports deterministic scoping via `using service = new SentinelCoreService()`.
+   */
+  public [Symbol.dispose](): void {
+    this.destroy();
+  }
+
+  /**
+   * Asynchronous AsyncDisposable interface implementation.
+   * Supports deterministic scoping via `await using service = new SentinelCoreService()`.
+   */
+  public async [Symbol.asyncDispose](): Promise<void> {
+    await this.destroyAsync();
   }
 }

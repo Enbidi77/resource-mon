@@ -7,7 +7,7 @@ import type {
   NetworkInterface,
   WindowsService,
   HardwareSummary,
-} from '@sentinel/contracts';
+} from "@sentinel/contracts";
 
 export interface ISystemAdapter {
   getOverview(): Promise<SystemOverview>;
@@ -18,5 +18,9 @@ export interface ISystemAdapter {
   getNetworkInterfaces(): Promise<NetworkInterface[]>;
   getServices(): Promise<WindowsService[]>;
   getHardwareSummary(): Promise<HardwareSummary>;
-}
 
+  /** Optional lifecycle cleanup */
+  dispose?(): Promise<void> | void;
+  [Symbol.dispose]?(): void;
+  [Symbol.asyncDispose]?(): Promise<void>;
+}

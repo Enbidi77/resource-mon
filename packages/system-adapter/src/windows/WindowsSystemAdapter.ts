@@ -19,7 +19,9 @@ import type {
   HardwareSummary,
 } from "@sentinel/contracts";
 
-export class WindowsSystemAdapter implements ISystemAdapter {
+export class WindowsSystemAdapter
+  implements ISystemAdapter, Disposable, AsyncDisposable
+{
   private kernel32 = new Kernel32Bridge();
   private advapi32 = new Advapi32Bridge();
   private verifier = new AuthenticodeVerifier();
@@ -614,5 +616,24 @@ export class WindowsSystemAdapter implements ISystemAdapter {
     })();
 
     return this.hardwareSummaryPromise;
+  }
+
+  /**
+   * Deterministically closes native handles such as PDH query sessions.
+   */
+  public dispose(): void {
+    if (this.pdh) {
+      this.pdh[Symbol.dispose]();
+    }
+  }
+
+  public [Symbol.dispose](): void {
+    this.dispose();
+  }
+
+  public async [Symbol.asyncDispose](): Promise<void> {
+    if (this.pdh) {
+      await this.pdh[Symbol.asyncDispose]();
+    }
   }
 }

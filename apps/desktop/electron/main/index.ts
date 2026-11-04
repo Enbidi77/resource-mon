@@ -224,3 +224,9 @@ app.on("window-all-closed", () => {
     app.quit();
   }
 });
+
+app.on("will-quit", () => {
+  if (coreService) {
+    coreService.destroy();
+  }
+});

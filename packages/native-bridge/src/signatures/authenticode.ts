@@ -1,11 +1,11 @@
-import koffi from 'koffi';
-import { createHash } from 'crypto';
-import { createReadStream, existsSync } from 'fs';
-import { defaultLogger } from '@sentinel/logger';
-import { promisifyKoffi } from '../koffi/loader.js';
+import koffi from "koffi";
+import { createHash } from "crypto";
+import { createReadStream, existsSync } from "fs";
+import { defaultLogger } from "@sentinel/logger";
+import { promisifyKoffi } from "../koffi/loader.js";
 
 export interface SignatureResult {
-  status: 'VALID' | 'INVALID' | 'UNSIGNED' | 'UNCHECKED' | 'SELF_SIGNED';
+  status: "VALID" | "INVALID" | "UNSIGNED" | "UNCHECKED" | "SELF_SIGNED";
   signer?: string | null;
 }
 
@@ -29,22 +29,22 @@ let CryptQueryObjectAsync: any = null;
 
 function ensureNativeBindings(): boolean {
   if (isNativeInitialized) return true;
-  if (process.platform !== 'win32') return false;
+  if (process.platform !== "win32") return false;
 
   try {
-    const wintrust = koffi.load('wintrust.dll');
-    const crypt32 = koffi.load('crypt32.dll');
+    const wintrust = koffi.load("wintrust.dll");
+    const crypt32 = koffi.load("crypt32.dll");
 
     /**
      * Win32 GUID structure
      * Represents a 128-bit globally unique identifier (UUID) matching Windows layout.
      * Used to identify the Authenticode action provider GUID: WINTRUST_ACTION_GENERIC_VERIFY_V2.
      */
-    koffi.struct('GUID_AUTH', {
-      Data1: 'uint32',
-      Data2: 'uint16',
-      Data3: 'uint16',
-      Data4: koffi.array('uint8', 8),
+    koffi.struct("GUID_AUTH", {
+      Data1: "uint32",
+      Data2: "uint16",
+      Data3: "uint16",
+      Data4: koffi.array("uint8", 8),
     });
 
     /**
@@ -52,11 +52,11 @@ function ensureNativeBindings(): boolean {
      * Specifies the target PE binary file to evaluate for digital signatures.
      * - pcwszFilePath: Wide Unicode UTF-16 string representing the absolute path to the binary.
      */
-    WINTRUST_FILE_INFO_TYPE = koffi.struct('WINTRUST_FILE_INFO_AUTH', {
-      cbStruct: 'uint32',
-      pcwszFilePath: 'str16',
-      hFile: 'void *',
-      pgKnownSubject: 'void *',
+    WINTRUST_FILE_INFO_TYPE = koffi.struct("WINTRUST_FILE_INFO_AUTH", {
+      cbStruct: "uint32",
+      pcwszFilePath: "str16",
+      hFile: "void *",
+      pgKnownSubject: "void *",
     });
 
     /**
@@ -67,20 +67,20 @@ function ensureNativeBindings(): boolean {
      * - dwUnionChoice: 1 (WTD_CHOICE_FILE) indicates validation of an on-disk file.
      * - dwProvFlags: Disables network revocation checks to maintain high local performance.
      */
-    WINTRUST_DATA_TYPE = koffi.struct('WINTRUST_DATA_AUTH', {
-      cbStruct: 'uint32',
-      pPolicyCallbackData: 'void *',
-      pSIPClientData: 'void *',
-      dwUIChoice: 'uint32',
-      fdwRevocationChecks: 'uint32',
-      dwUnionChoice: 'uint32',
-      pFile: 'WINTRUST_FILE_INFO_AUTH *',
-      dwStateAction: 'uint32',
-      hWVTStateData: 'void *',
-      pwszURLReference: 'void *',
-      dwProvFlags: 'uint32',
-      dwUIContext: 'uint32',
-      pSignatureSettings: 'void *',
+    WINTRUST_DATA_TYPE = koffi.struct("WINTRUST_DATA_AUTH", {
+      cbStruct: "uint32",
+      pPolicyCallbackData: "void *",
+      pSIPClientData: "void *",
+      dwUIChoice: "uint32",
+      fdwRevocationChecks: "uint32",
+      dwUnionChoice: "uint32",
+      pFile: "WINTRUST_FILE_INFO_AUTH *",
+      dwStateAction: "uint32",
+      hWVTStateData: "void *",
+      pwszURLReference: "void *",
+      dwProvFlags: "uint32",
+      dwUIContext: "uint32",
+      pSignatureSettings: "void *",
     });
 
     /**
@@ -93,7 +93,7 @@ function ensureNativeBindings(): boolean {
      * @returns 0 (ERROR_SUCCESS) if valid and trusted, or specific Win32 HRESULT / error code.
      */
     WinVerifyTrustFn = wintrust.func(
-      'long __stdcall WinVerifyTrust(void *hwnd, GUID_AUTH *pgActionID, WINTRUST_DATA_AUTH *pWVTData)'
+      "long __stdcall WinVerifyTrust(void *hwnd, GUID_AUTH *pgActionID, WINTRUST_DATA_AUTH *pWVTData)",
     );
 
     /**
@@ -109,7 +109,7 @@ function ensureNativeBindings(): boolean {
      * @returns Boolean 1 on success, 0 on failure.
      */
     CryptQueryObjectFn = crypt32.func(
-      'int __stdcall CryptQueryObject(uint32 dwObjectType, const void *pvObject, uint32 dwExpectedContentTypeFlags, uint32 dwExpectedFormatTypeFlags, uint32 dwFlags, _Out_ uint32 *pdwMsgAndCertEncodingType, _Out_ uint32 *pdwContentType, _Out_ uint32 *pdwFormatType, _Out_ void **phCertStore, _Out_ void **phMsg, _Out_ void **ppvContext)'
+      "int __stdcall CryptQueryObject(uint32 dwObjectType, const void *pvObject, uint32 dwExpectedContentTypeFlags, uint32 dwExpectedFormatTypeFlags, uint32 dwFlags, _Out_ uint32 *pdwMsgAndCertEncodingType, _Out_ uint32 *pdwContentType, _Out_ uint32 *pdwFormatType, _Out_ void **phCertStore, _Out_ void **phMsg, _Out_ void **ppvContext)",
     );
 
     /**
@@ -117,7 +117,7 @@ function ensureNativeBindings(): boolean {
      * Acquires decoded parameters/signer attributes from an open cryptographic message handle.
      */
     CryptMsgGetParamFn = crypt32.func(
-      'int __stdcall CryptMsgGetParam(void *hCryptMsg, uint32 dwParamType, uint32 dwIndex, _Out_ void *pvData, _Inout_ uint32 *pcbData)'
+      "int __stdcall CryptMsgGetParam(void *hCryptMsg, uint32 dwParamType, uint32 dwIndex, _Out_ void *pvData, _Inout_ uint32 *pcbData)",
     );
 
     /**
@@ -128,7 +128,7 @@ function ensureNativeBindings(): boolean {
      * @returns Pointer to CERT_CONTEXT struct or null if not found.
      */
     CertFindCertificateInStoreFn = crypt32.func(
-      'void * __stdcall CertFindCertificateInStore(void *hCertStore, uint32 dwCertEncodingType, uint32 dwFindFlags, uint32 dwFindType, const void *pvFindPara, void *pPrevCertContext)'
+      "void * __stdcall CertFindCertificateInStore(void *hCertStore, uint32 dwCertEncodingType, uint32 dwFindFlags, uint32 dwFindType, const void *pvFindPara, void *pPrevCertContext)",
     );
 
     /**
@@ -141,27 +141,31 @@ function ensureNativeBindings(): boolean {
      * @returns Character length written into buffer.
      */
     CertGetNameStringAFn = crypt32.func(
-      'uint32 __stdcall CertGetNameStringA(void *pCertContext, uint32 dwType, uint32 dwFlags, void *pvTypePara, _Out_ uint8 *pszNameString, uint32 cchNameString)'
+      "uint32 __stdcall CertGetNameStringA(void *pCertContext, uint32 dwType, uint32 dwFlags, void *pvTypePara, _Out_ uint8 *pszNameString, uint32 cchNameString)",
     );
 
     /**
      * Win32 CertCloseStore (crypt32.dll)
      * Closes the in-memory certificate store handle opened by CryptQueryObject.
      */
-    CertCloseStoreFn = crypt32.func('int __stdcall CertCloseStore(void *hCertStore, uint32 dwFlags)');
+    CertCloseStoreFn = crypt32.func(
+      "int __stdcall CertCloseStore(void *hCertStore, uint32 dwFlags)",
+    );
 
     /**
      * Win32 CryptMsgClose (crypt32.dll)
      * Closes the cryptographic PKCS#7 message handle opened by CryptQueryObject.
      */
-    CryptMsgCloseFn = crypt32.func('int __stdcall CryptMsgClose(void *hCryptMsg)');
+    CryptMsgCloseFn = crypt32.func(
+      "int __stdcall CryptMsgClose(void *hCryptMsg)",
+    );
 
     /**
      * Win32 CertFreeCertificateContext (crypt32.dll)
      * Decrements the reference count and frees the CERT_CONTEXT handle returned by CertFindCertificateInStore.
      */
     CertFreeCertificateContextFn = crypt32.func(
-      'int __stdcall CertFreeCertificateContext(void *pCertContext)'
+      "int __stdcall CertFreeCertificateContext(void *pCertContext)",
     );
 
     // Promisified asynchronous non-blocking versions:
@@ -180,7 +184,10 @@ function ensureNativeBindings(): boolean {
     isNativeInitialized = true;
     return true;
   } catch (err) {
-    defaultLogger.warn({ err }, 'Failed to initialize native WinTrust / Crypt32 bindings; using fallback');
+    defaultLogger.warn(
+      { err },
+      "Failed to initialize native WinTrust / Crypt32 bindings; using fallback",
+    );
     isNativeInitialized = false;
     return false;
   }
@@ -200,15 +207,15 @@ export class AuthenticodeVerifier {
    */
   public async verifySignature(filePath: string): Promise<SignatureResult> {
     if (!filePath || !existsSync(filePath)) {
-      return { status: 'UNCHECKED' };
+      return { status: "UNCHECKED" };
     }
 
     if (this.signatureCache.has(filePath)) {
       return this.signatureCache.get(filePath)!;
     }
 
-    if (process.platform !== 'win32' || !ensureNativeBindings()) {
-      const res: SignatureResult = { status: 'UNCHECKED' };
+    if (process.platform !== "win32" || !ensureNativeBindings()) {
+      const res: SignatureResult = { status: "UNCHECKED" };
       this.signatureCache.set(filePath, res);
       return res;
     }
@@ -244,36 +251,36 @@ export class AuthenticodeVerifier {
         trustResult = WinVerifyTrustFn(null, actionIdObj, trustData);
       }
 
-      let status: SignatureResult['status'] = 'UNSIGNED';
+      let status: SignatureResult["status"] = "UNSIGNED";
       let signer: string | null = null;
 
       if (trustResult === 0) {
-        status = 'VALID';
+        status = "VALID";
       } else if (trustResult === -2146762486 || trustResult === -2146762487) {
         // Untrusted root or self-signed
-        status = 'SELF_SIGNED';
+        status = "SELF_SIGNED";
       } else if (trustResult === -2146869232) {
         // Bad digest / hash mismatch
-        status = 'INVALID';
+        status = "INVALID";
       } else if (trustResult === -2146762496) {
         // 0x800B0100 (TRUST_E_NOSIGNATURE)
         // Check if it's a catalog-signed Windows system binary
         const lower = filePath.toLowerCase();
-        const winDir = (process.env.SystemRoot || 'c:\\windows').toLowerCase();
+        const winDir = (process.env.SystemRoot || "c:\\windows").toLowerCase();
         if (
           lower.startsWith(`${winDir}\\system32\\`) ||
           lower.startsWith(`${winDir}\\syswow64\\`) ||
           lower.startsWith(`${winDir}\\systemapps\\`)
         ) {
-          status = 'VALID';
-          signer = 'Microsoft Windows Component';
+          status = "VALID";
+          signer = "Microsoft Windows Component";
         } else {
-          status = 'UNSIGNED';
+          status = "UNSIGNED";
         }
       }
 
       // If valid or self-signed, extract signer certificate Subject CN if possible
-      if (status === 'VALID' || status === 'SELF_SIGNED') {
+      if (status === "VALID" || status === "SELF_SIGNED") {
         if (!signer && (CryptQueryObjectAsync || CryptQueryObjectFn)) {
           signer = await this.extractSignerName(filePath);
         }
@@ -283,8 +290,11 @@ export class AuthenticodeVerifier {
       this.signatureCache.set(filePath, result);
       return result;
     } catch (err) {
-      defaultLogger.debug({ filePath, err }, 'Failed to verify Authenticode signature natively');
-      const res: SignatureResult = { status: 'UNCHECKED' };
+      defaultLogger.debug(
+        { filePath, err },
+        "Failed to verify Authenticode signature natively",
+      );
+      const res: SignatureResult = { status: "UNCHECKED" };
       this.signatureCache.set(filePath, res);
       return res;
     }
@@ -295,15 +305,15 @@ export class AuthenticodeVerifier {
    */
   public verifySignatureSync(filePath: string): SignatureResult {
     if (!filePath || !existsSync(filePath)) {
-      return { status: 'UNCHECKED' };
+      return { status: "UNCHECKED" };
     }
 
     if (this.signatureCache.has(filePath)) {
       return this.signatureCache.get(filePath)!;
     }
 
-    if (process.platform !== 'win32' || !ensureNativeBindings()) {
-      const res: SignatureResult = { status: 'UNCHECKED' };
+    if (process.platform !== "win32" || !ensureNativeBindings()) {
+      const res: SignatureResult = { status: "UNCHECKED" };
       this.signatureCache.set(filePath, res);
       return res;
     }
@@ -334,31 +344,31 @@ export class AuthenticodeVerifier {
 
       const trustResult = WinVerifyTrustFn(null, actionIdObj, trustData);
 
-      let status: SignatureResult['status'] = 'UNSIGNED';
+      let status: SignatureResult["status"] = "UNSIGNED";
       let signer: string | null = null;
 
       if (trustResult === 0) {
-        status = 'VALID';
+        status = "VALID";
       } else if (trustResult === -2146762486 || trustResult === -2146762487) {
-        status = 'SELF_SIGNED';
+        status = "SELF_SIGNED";
       } else if (trustResult === -2146869232) {
-        status = 'INVALID';
+        status = "INVALID";
       } else if (trustResult === -2146762496) {
         const lower = filePath.toLowerCase();
-        const winDir = (process.env.SystemRoot || 'c:\\windows').toLowerCase();
+        const winDir = (process.env.SystemRoot || "c:\\windows").toLowerCase();
         if (
           lower.startsWith(`${winDir}\\system32\\`) ||
           lower.startsWith(`${winDir}\\syswow64\\`) ||
           lower.startsWith(`${winDir}\\systemapps\\`)
         ) {
-          status = 'VALID';
-          signer = 'Microsoft Windows Component';
+          status = "VALID";
+          signer = "Microsoft Windows Component";
         } else {
-          status = 'UNSIGNED';
+          status = "UNSIGNED";
         }
       }
 
-      if (status === 'VALID' || status === 'SELF_SIGNED') {
+      if (status === "VALID" || status === "SELF_SIGNED") {
         if (!signer && CryptQueryObjectFn) {
           signer = this.extractSignerNameSync(filePath);
         }
@@ -368,8 +378,11 @@ export class AuthenticodeVerifier {
       this.signatureCache.set(filePath, result);
       return result;
     } catch (err) {
-      defaultLogger.debug({ filePath, err }, 'Failed to verify Authenticode signature synchronously');
-      const res: SignatureResult = { status: 'UNCHECKED' };
+      defaultLogger.debug(
+        { filePath, err },
+        "Failed to verify Authenticode signature synchronously",
+      );
+      const res: SignatureResult = { status: "UNCHECKED" };
       this.signatureCache.set(filePath, res);
       return res;
     }
@@ -384,7 +397,7 @@ export class AuthenticodeVerifier {
       const hMsg = [null];
       const pContext = [null];
 
-      const wPath = Buffer.from(filePath + '\0', 'utf16le');
+      const wPath = Buffer.from(filePath + "\0", "utf16le");
       let ok: any;
       if (CryptQueryObjectAsync) {
         ok = await CryptQueryObjectAsync(
@@ -398,7 +411,7 @@ export class AuthenticodeVerifier {
           formatType,
           hStore,
           hMsg,
-          pContext
+          pContext,
         );
       } else {
         ok = CryptQueryObjectFn(
@@ -412,7 +425,7 @@ export class AuthenticodeVerifier {
           formatType,
           hStore,
           hMsg,
-          pContext
+          pContext,
         );
       }
 
@@ -420,13 +433,27 @@ export class AuthenticodeVerifier {
 
       try {
         if (hStore[0]) {
-          const pCert = CertFindCertificateInStoreFn(hStore[0], 0x00010001, 0, 0, null, null);
+          const pCert = CertFindCertificateInStoreFn(
+            hStore[0],
+            0x00010001,
+            0,
+            0,
+            null,
+            null,
+          );
           if (pCert) {
             const nameBuf = Buffer.alloc(256);
-            const nameLen = CertGetNameStringAFn(pCert, 4, 0, null, nameBuf, 256);
+            const nameLen = CertGetNameStringAFn(
+              pCert,
+              4,
+              0,
+              null,
+              nameBuf,
+              256,
+            );
             CertFreeCertificateContextFn(pCert);
             if (nameLen > 1) {
-              return nameBuf.toString('utf8', 0, nameLen - 1);
+              return nameBuf.toString("utf8", 0, nameLen - 1);
             }
           }
         }
@@ -449,7 +476,7 @@ export class AuthenticodeVerifier {
       const hMsg = [null];
       const pContext = [null];
 
-      const wPath = Buffer.from(filePath + '\0', 'utf16le');
+      const wPath = Buffer.from(filePath + "\0", "utf16le");
       const ok = CryptQueryObjectFn(
         1,
         wPath,
@@ -461,20 +488,34 @@ export class AuthenticodeVerifier {
         formatType,
         hStore,
         hMsg,
-        pContext
+        pContext,
       );
 
       if (!ok || !hMsg[0]) return null;
 
       try {
         if (hStore[0]) {
-          const pCert = CertFindCertificateInStoreFn(hStore[0], 0x00010001, 0, 0, null, null);
+          const pCert = CertFindCertificateInStoreFn(
+            hStore[0],
+            0x00010001,
+            0,
+            0,
+            null,
+            null,
+          );
           if (pCert) {
             const nameBuf = Buffer.alloc(256);
-            const nameLen = CertGetNameStringAFn(pCert, 4, 0, null, nameBuf, 256);
+            const nameLen = CertGetNameStringAFn(
+              pCert,
+              4,
+              0,
+              null,
+              nameBuf,
+              256,
+            );
             CertFreeCertificateContextFn(pCert);
             if (nameLen > 1) {
-              return nameBuf.toString('utf8', 0, nameLen - 1);
+              return nameBuf.toString("utf8", 0, nameLen - 1);
             }
           }
         }
@@ -500,16 +541,23 @@ export class AuthenticodeVerifier {
 
     return new Promise((resolve) => {
       try {
-        const hash = createHash('sha256');
+        const hash = createHash("sha256");
         const stream = createReadStream(filePath);
 
-        stream.on('data', (chunk: Buffer | string) => hash.update(chunk));
-        stream.on('end', () => {
-          const digest = hash.digest('hex');
+        stream.on("data", (chunk: Buffer | string) => hash.update(chunk));
+        stream.on("end", () => {
+          const digest = hash.digest("hex");
           this.hashCache.set(filePath, digest);
           resolve(digest);
         });
-        stream.on('error', () => resolve(null));
+        stream.on("error", (err) => {
+          stream.destroy();
+          defaultLogger.debug(
+            { filePath, err },
+            "Error during file SHA-256 stream reading",
+          );
+          resolve(null);
+        });
       } catch {
         resolve(null);
       }

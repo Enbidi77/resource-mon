@@ -1,5 +1,5 @@
-import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS } from '@sentinel/contracts';
+import { contextBridge, ipcRenderer } from "electron";
+import { IPC_CHANNELS } from "@sentinel/contracts";
 import type {
   ISentinelAPI,
   ProcessActionRequest,
@@ -7,7 +7,7 @@ import type {
   QueryEventsRequest,
   ReportConfig,
   SystemMetricsSnapshot,
-} from '@sentinel/contracts';
+} from "@sentinel/contracts";
 
 const api: ISentinelAPI = {
   // Window controls
@@ -20,18 +20,28 @@ const api: ISentinelAPI = {
   getSystemOverview: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_OVERVIEW),
   getSystemMetrics: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_METRICS),
   onSystemMetrics: (callback: (metrics: SystemMetricsSnapshot) => void) => {
-    const subscription = (_event: any, metrics: SystemMetricsSnapshot) => callback(metrics);
+    const subscription = (_event: any, metrics: SystemMetricsSnapshot) =>
+      callback(metrics);
     ipcRenderer.on(IPC_CHANNELS.SYSTEM_STREAM_METRICS, subscription);
-    return () => {
-      ipcRenderer.removeListener(IPC_CHANNELS.SYSTEM_STREAM_METRICS, subscription);
+    let isDisposed = false;
+    const unsub = () => {
+      if (isDisposed) return;
+      isDisposed = true;
+      ipcRenderer.removeListener(
+        IPC_CHANNELS.SYSTEM_STREAM_METRICS,
+        subscription,
+      );
     };
+    (unsub as any)[Symbol.dispose] = unsub;
+    return unsub as (() => void) & Disposable;
   },
   toggleMetricsStream: (enabled: boolean, intervalMs?: number) =>
     ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_TOGGLE_STREAM, enabled, intervalMs),
 
   // Processes
   listProcesses: () => ipcRenderer.invoke(IPC_CHANNELS.PROCESS_LIST),
-  getProcessDetails: (pid: number) => ipcRenderer.invoke(IPC_CHANNELS.PROCESS_GET_DETAILS, pid),
+  getProcessDetails: (pid: number) =>
+    ipcRenderer.invoke(IPC_CHANNELS.PROCESS_GET_DETAILS, pid),
   controlProcess: (request: ProcessActionRequest) =>
     ipcRenderer.invoke(IPC_CHANNELS.PROCESS_CONTROL, request),
   verifyProcessSignature: (filePath: string) =>
@@ -40,8 +50,10 @@ const api: ISentinelAPI = {
     ipcRenderer.invoke(IPC_CHANNELS.PROCESS_COMPUTE_HASH, filePath),
 
   // Network
-  getNetworkConnections: () => ipcRenderer.invoke(IPC_CHANNELS.NETWORK_GET_CONNECTIONS),
-  getNetworkInterfaces: () => ipcRenderer.invoke(IPC_CHANNELS.NETWORK_GET_INTERFACES),
+  getNetworkConnections: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.NETWORK_GET_CONNECTIONS),
+  getNetworkInterfaces: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.NETWORK_GET_INTERFACES),
 
   // Services
   listServices: () => ipcRenderer.invoke(IPC_CHANNELS.SERVICES_LIST),
@@ -49,7 +61,8 @@ const api: ISentinelAPI = {
     ipcRenderer.invoke(IPC_CHANNELS.SERVICES_CONTROL, request),
 
   // Security
-  getSecurityPosture: () => ipcRenderer.invoke(IPC_CHANNELS.SECURITY_GET_POSTURE),
+  getSecurityPosture: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.SECURITY_GET_POSTURE),
   getSecurityAlerts: () => ipcRenderer.invoke(IPC_CHANNELS.SECURITY_GET_ALERTS),
   runFimScan: (directoryPath?: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SECURITY_RUN_FIM_SCAN, directoryPath),
@@ -64,11 +77,12 @@ const api: ISentinelAPI = {
     ipcRenderer.invoke(IPC_CHANNELS.EVENTS_QUERY, request),
 
   // Hardware
-  getHardwareSummary: () => ipcRenderer.invoke(IPC_CHANNELS.HARDWARE_GET_SUMMARY),
+  getHardwareSummary: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.HARDWARE_GET_SUMMARY),
 
   // Reports
   generateReport: (config: ReportConfig) =>
     ipcRenderer.invoke(IPC_CHANNELS.REPORTS_GENERATE, config),
 };
 
-contextBridge.exposeInMainWorld('sentinelAPI', api);
+contextBridge.exposeInMainWorld("sentinelAPI", api);
