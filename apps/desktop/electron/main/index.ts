@@ -4,8 +4,10 @@ import { SentinelCoreService } from "@sentinel/core";
 import { IPC_CHANNELS } from "@sentinel/contracts";
 import { defaultLogger } from "@sentinel/logger";
 
-// Hardware acceleration & transparent visual support for authentic Apple Glass / Acrylic blur
-app.commandLine.appendSwitch("enable-transparent-visuals");
+// Transparent visual support for Linux X11 environments if applicable
+if (process.platform === "linux") {
+  app.commandLine.appendSwitch("enable-transparent-visuals");
+}
 
 process.on("uncaughtException", (err) => {
   defaultLogger.error({ err }, "CRITICAL UNCAUGHT EXCEPTION in Main Process");
@@ -34,7 +36,8 @@ function createWindow(): void {
     transparent: true,
     backgroundColor: "#00000000", // Transparent base for authentic glass blur
     vibrancy: process.platform === "darwin" ? "under-window" : undefined,
-    backgroundMaterial: process.platform === "win32" ? "acrylic" : undefined,
+    // Note: Do NOT set backgroundMaterial: "acrylic" on Windows with transparent: true & custom CSS rounded corners.
+    // DWM renders a rectangular acrylic brush over the entire HWND, producing square gray corner artifacts outside the CSS border radius.
     title: "Sentinel Desktop",
     autoHideMenuBar: true,
     webPreferences: {

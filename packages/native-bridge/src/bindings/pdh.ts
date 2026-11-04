@@ -291,29 +291,6 @@ export class PdhBridge implements Disposable, AsyncDisposable {
     await this.dispose();
   }
 
-  /**
-   * Synchronous Disposable implementation.
-   * Closes active query handle and releases PDH memory deterministically.
-   */
-  public [Symbol.dispose](): void {
-    if (this.hQuery[0] && this.PdhCloseQueryFn) {
-      try {
-        this.PdhCloseQueryFn(this.hQuery[0]);
-      } catch (err) {
-        defaultLogger.debug({ err }, 'Error closing PDH query synchronously');
-      }
-      this.hQuery[0] = 0n;
-      this.isInitialized = false;
-    }
-  }
-
-  /**
-   * Asynchronous AsyncDisposable implementation.
-   */
-  public async [Symbol.asyncDispose](): Promise<void> {
-    await this.dispose();
-  }
-
   public async dispose(): Promise<void> {
     if (this.hQuery[0] && this.PdhCloseQueryAsync) {
       try {

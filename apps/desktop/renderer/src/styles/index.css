@@ -11,40 +11,45 @@
   --glass-surface-elevated: rgba(255, 255, 255, 0.075);
   --glass-surface-solid: #0c0e18;
   --glass-surface-sidebar: rgba(0, 0, 0, 0.22);
-  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-border: rgba(255, 255, 255, 0.1);
   --glass-border-subtle: rgba(255, 255, 255, 0.06);
   --glass-border-hover: rgba(255, 255, 255, 0.25);
   --glass-specular: inset 0 1px 0 0 rgba(255, 255, 255, 0.22);
-  --glass-specular-bright: inset 0 1px 0 0 rgba(255, 255, 255, 0.40);
-  --glass-shadow-soft: 0 20px 50px 0 rgba(0, 0, 0, 0.45), 0 2px 8px 0 rgba(0, 0, 0, 0.25);
-  --glass-shadow-elevated: 0 25px 60px 0 rgba(0, 0, 0, 0.55), 0 4px 16px 0 rgba(0, 0, 0, 0.30);
-  --text-primary: #FFFFFF;
+  --glass-specular-bright: inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+  --glass-shadow-soft:
+    0 20px 50px 0 rgba(0, 0, 0, 0.45), 0 2px 8px 0 rgba(0, 0, 0, 0.25);
+  --glass-shadow-elevated:
+    0 25px 60px 0 rgba(0, 0, 0, 0.55), 0 4px 16px 0 rgba(0, 0, 0, 0.3);
+  --text-primary: #ffffff;
   --text-secondary: rgba(255, 255, 255, 0.65);
   --text-tertiary: rgba(255, 255, 255, 0.42);
   --chart-grid: rgba(255, 255, 255, 0.08);
-  --chart-axis: rgba(255, 255, 255, 0.40);
+  --chart-axis: rgba(255, 255, 255, 0.4);
   --blur-radius: 28px;
   --corner-radius: 20px;
 }
 
-.light, [data-theme='light'] {
+.light,
+[data-theme="light"] {
   /* Apple Glass UI Tokens - Light Appearance (Frosted White Liquid Glass) */
-  --glass-bg-canvas: #F0F2F6;
+  --glass-bg-canvas: #f0f2f6;
   --glass-surface: rgba(255, 255, 255, 0.72);
   --glass-surface-subtle: rgba(255, 255, 255, 0.45);
-  --glass-surface-elevated: rgba(255, 255, 255, 0.90);
-  --glass-surface-solid: #FFFFFF;
+  --glass-surface-elevated: rgba(255, 255, 255, 0.9);
+  --glass-surface-solid: #ffffff;
   --glass-surface-sidebar: rgba(255, 255, 255, 0.65);
   --glass-border: rgba(255, 255, 255, 0.85);
   --glass-border-subtle: rgba(0, 0, 0, 0.06);
   --glass-border-hover: rgba(0, 0, 0, 0.15);
   --glass-specular: inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
   --glass-specular-bright: inset 0 1px 1px 0 rgba(255, 255, 255, 1);
-  --glass-shadow-soft: 0 12px 36px 0 rgba(0, 0, 0, 0.06), 0 2px 8px 0 rgba(0, 0, 0, 0.03);
-  --glass-shadow-elevated: 0 20px 48px 0 rgba(0, 0, 0, 0.10), 0 4px 16px 0 rgba(0, 0, 0, 0.04);
-  --text-primary: #1D1D1F;
-  --text-secondary: #52525B;
-  --text-tertiary: #8E8E93;
+  --glass-shadow-soft:
+    0 12px 36px 0 rgba(0, 0, 0, 0.06), 0 2px 8px 0 rgba(0, 0, 0, 0.03);
+  --glass-shadow-elevated:
+    0 20px 48px 0 rgba(0, 0, 0, 0.1), 0 4px 16px 0 rgba(0, 0, 0, 0.04);
+  --text-primary: #1d1d1f;
+  --text-secondary: #52525b;
+  --text-tertiary: #8e8e93;
   --chart-grid: rgba(0, 0, 0, 0.06);
   --chart-axis: rgba(100, 116, 139, 0.65);
 }
@@ -54,13 +59,28 @@
     border-color: var(--glass-border-subtle);
   }
 
+  html,
   body {
-    background-color: var(--glass-bg-canvas);
+    background-color: transparent !important;
+    background: transparent !important;
     color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+      "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     user-select: none;
     -webkit-user-select: none;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background: transparent;
   }
 }
 
@@ -100,9 +120,10 @@
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow-soft), var(--glass-specular);
   border-radius: var(--corner-radius);
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
-              box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
-              border-color 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .apple-glass-elevated {
@@ -132,19 +153,27 @@
 
 /* Luminous Text & Indicator Auras (Active in dark mode) */
 .dark .text-glow-cyan {
-  text-shadow: 0 0 12px rgba(34, 211, 238, 0.6), 0 0 24px rgba(34, 211, 238, 0.2);
+  text-shadow:
+    0 0 12px rgba(34, 211, 238, 0.6),
+    0 0 24px rgba(34, 211, 238, 0.2);
 }
 
 .dark .text-glow-emerald {
-  text-shadow: 0 0 12px rgba(52, 211, 153, 0.6), 0 0 24px rgba(52, 211, 153, 0.2);
+  text-shadow:
+    0 0 12px rgba(52, 211, 153, 0.6),
+    0 0 24px rgba(52, 211, 153, 0.2);
 }
 
 .dark .text-glow-purple {
-  text-shadow: 0 0 12px rgba(192, 132, 252, 0.6), 0 0 24px rgba(192, 132, 252, 0.2);
+  text-shadow:
+    0 0 12px rgba(192, 132, 252, 0.6),
+    0 0 24px rgba(192, 132, 252, 0.2);
 }
 
 .dark .text-glow-rose {
-  text-shadow: 0 0 12px rgba(251, 113, 133, 0.6), 0 0 24px rgba(251, 113, 133, 0.2);
+  text-shadow:
+    0 0 12px rgba(251, 113, 133, 0.6),
+    0 0 24px rgba(251, 113, 133, 0.2);
 }
 
 .dark .text-glow-white {
@@ -185,19 +214,35 @@
 
 /* Ambient liquid light glow */
 .ambient-glow-cyan {
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.25) 0%, rgba(6, 182, 212, 0) 70%);
+  background: radial-gradient(
+    circle,
+    rgba(6, 182, 212, 0.25) 0%,
+    rgba(6, 182, 212, 0) 70%
+  );
 }
 
 .ambient-glow-purple {
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.25) 0%, rgba(168, 85, 247, 0) 70%);
+  background: radial-gradient(
+    circle,
+    rgba(168, 85, 247, 0.25) 0%,
+    rgba(168, 85, 247, 0) 70%
+  );
 }
 
 .ambient-glow-emerald {
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, rgba(16, 185, 129, 0) 70%);
+  background: radial-gradient(
+    circle,
+    rgba(16, 185, 129, 0.25) 0%,
+    rgba(16, 185, 129, 0) 70%
+  );
 }
 
 .ambient-glow-blue {
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0) 70%);
+  background: radial-gradient(
+    circle,
+    rgba(59, 130, 246, 0.25) 0%,
+    rgba(59, 130, 246, 0) 70%
+  );
 }
 
 /* Custom Scrollbars */
@@ -216,7 +261,7 @@
 }
 
 .light ::-webkit-scrollbar-thumb,
-[data-theme='light'] ::-webkit-scrollbar-thumb {
+[data-theme="light"] ::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.18);
 }
 
@@ -225,6 +270,6 @@
 }
 
 .light ::-webkit-scrollbar-thumb:hover,
-[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.32);
 }

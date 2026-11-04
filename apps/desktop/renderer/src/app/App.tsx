@@ -21,8 +21,15 @@ import { ReportsPage } from "../pages/ReportsPage";
 import { SettingsPage } from "../pages/SettingsPage";
 
 export const App: React.FC = () => {
-  const { currentPage, setOverview, toasts, removeToast, theme } =
-    useAppStore();
+  const {
+    currentPage,
+    setOverview,
+    toasts,
+    removeToast,
+    theme,
+    isMaximized,
+    setIsMaximized,
+  } = useAppStore();
   const { setCurrentMetrics } = useMetricsStore();
 
   useEffect(() => {
@@ -46,11 +53,19 @@ export const App: React.FC = () => {
         setCurrentMetrics(snapshot);
       });
 
+      // 3. Keep window maximized state in sync with OS
+      window.sentinelAPI.isWindowMaximized().then(setIsMaximized);
+      const handleResize = () => {
+        window.sentinelAPI?.isWindowMaximized().then(setIsMaximized);
+      };
+      window.addEventListener("resize", handleResize);
+
       return () => {
         unsubscribe();
+        window.removeEventListener("resize", handleResize);
       };
     }
-  }, [setOverview, setCurrentMetrics]);
+  }, [setOverview, setCurrentMetrics, setIsMaximized]);
 
   const renderPage = (page: AppPage) => {
     switch (page) {
@@ -82,7 +97,13 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[var(--glass-bg-canvas)] text-[var(--text-primary)] overflow-hidden font-sans relative selection:bg-cyan-500/30 selection:text-cyan-800 dark:selection:text-cyan-200">
+    <div
+      className={`h-screen w-screen flex flex-col bg-[var(--glass-bg-canvas)] text-[var(--text-primary)] overflow-hidden font-sans relative selection:bg-cyan-500/30 selection:text-cyan-800 dark:selection:text-cyan-200 transition-all duration-150 ${
+        isMaximized
+          ? "rounded-none border-none"
+          : "rounded-[20px] border border-black/10 dark:border-white/15 shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
+      }`}
+    >
       {/* Liquid Glass Vibrant Ambient Mesh Gradient (Rich Contrast Refraction Backplane) */}
       <div
         className="absolute inset-0 pointer-events-none overflow-hidden z-0"
@@ -143,42 +164,30 @@ export const App: React.FC = () => {
       {/* Global Apple Glass Command Palette */}
       <CommandPalette />
 
-      {/* Floating Apple Glass Toast Notifications */}
-      <div className="fixed bottom-10 right-6 z-50 flex flex-col gap-2.5 pointer-events-none">
+      {/* Toast Notification Container */}
+      <div className="fixed bottom-12 right-6 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map((toast) => (
-          <div
+          <GlassSurface
             key={toast.id}
-            onClick={() => removeToast(toast.id)}
-            className="pointer-events-auto cursor-pointer"
+            elevation="elevated"
+            className={`pointer-events-auto flex items-center justify-between gap-3 px-4 py-3 rounded-xl border shadow-xl min-w-72 max-w-96 animate-in fade-in slide-in-from-bottom-5 duration-200 ${
+              toast.type === "error"
+                ? "border-red-500/40 text-red-700 dark:text-red-300 bg-red-500/10"
+                : toast.type === "warning"
+                  ? "border-amber-500/40 text-amber-700 dark:text-amber-300 bg-amber-500/10"
+                  : toast.type === "success"
+                    ? "border-emerald-500/40 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10"
+                    : "border-cyan-500/40 text-cyan-700 dark:text-cyan-300 bg-cyan-500/10"
+            }`}
           >
-            <GlassSurface
-              elevation="elevated"
-              blur="lg"
-              rounded="xl"
-              className={`px-4 py-2.5 text-xs font-mono flex items-center gap-2.5 transition-all shadow-xl hover:scale-[1.02] ${
-                toast.type === "success"
-                  ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                  : toast.type === "error"
-                    ? "border-red-500/30 text-red-600 dark:text-red-400"
-                    : toast.type === "warning"
-                      ? "border-amber-500/30 text-amber-600 dark:text-amber-400"
-                      : "border-[var(--glass-border)] text-[var(--text-primary)]"
-              }`}
+            <span className="text-xs font-medium">{toast.message}</span>
+            <button
+              onClick={() => removeToast(toast.id)}
+              className="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xs cursor-pointer"
             >
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  toast.type === "success"
-                    ? "bg-emerald-500 dark:bg-emerald-400"
-                    : toast.type === "error"
-                      ? "bg-red-500 dark:bg-red-400"
-                      : toast.type === "warning"
-                        ? "bg-amber-500 dark:bg-amber-400"
-                        : "bg-cyan-500 dark:bg-cyan-400"
-                }`}
-              />
-              <span>{toast.message}</span>
-            </GlassSurface>
-          </div>
+              ✕
+            </button>
+          </GlassSurface>
         ))}
       </div>
     </div>

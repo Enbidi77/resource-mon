@@ -1,35 +1,36 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 import type {
   SystemOverview,
   ProcessInfo,
   NetworkConnection,
   SecurityAlert,
-} from '@sentinel/contracts';
+} from "@sentinel/contracts";
 
 export type AppPage =
-  | 'overview'
-  | 'performance'
-  | 'processes'
-  | 'hardware'
-  | 'network'
-  | 'services'
-  | 'storage'
-  | 'security'
-  | 'events'
-  | 'reports'
-  | 'settings';
+  | "overview"
+  | "performance"
+  | "processes"
+  | "hardware"
+  | "network"
+  | "services"
+  | "storage"
+  | "security"
+  | "events"
+  | "reports"
+  | "settings";
 
-export type AppTheme = 'dark' | 'light';
+export type AppTheme = "dark" | "light";
 
 interface ToastNotification {
   id: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: "info" | "success" | "warning" | "error";
   message: string;
 }
 
 interface AppState {
   currentPage: AppPage;
   theme: AppTheme;
+  isMaximized: boolean;
   overview: SystemOverview | null;
   selectedProcess: ProcessInfo | null;
   selectedConnection: NetworkConnection | null;
@@ -42,6 +43,7 @@ interface AppState {
   setCurrentPage: (page: AppPage) => void;
   setTheme: (theme: AppTheme) => void;
   toggleTheme: () => void;
+  setIsMaximized: (max: boolean) => void;
   setOverview: (overview: SystemOverview) => void;
   setSelectedProcess: (proc: ProcessInfo | null) => void;
   setSelectedConnection: (conn: NetworkConnection | null) => void;
@@ -49,28 +51,29 @@ interface AppState {
   setIsRightDrawerOpen: (open: boolean) => void;
   setIsCommandPaletteOpen: (open: boolean) => void;
   setSearchQuery: (query: string) => void;
-  addToast: (toast: Omit<ToastNotification, 'id'>) => void;
+  addToast: (toast: Omit<ToastNotification, "id">) => void;
   removeToast: (id: string) => void;
 }
 
 const applyTheme = (theme: AppTheme) => {
-  if (typeof document !== 'undefined') {
-    document.documentElement.classList.remove('light', 'dark');
+  if (typeof document !== "undefined") {
+    document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(theme);
-    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute("data-theme", theme);
   }
 };
 
 export const useAppStore = create<AppState>((set) => ({
-  currentPage: 'overview',
-  theme: 'dark',
+  currentPage: "overview",
+  theme: "dark",
+  isMaximized: false,
   overview: null,
   selectedProcess: null,
   selectedConnection: null,
   selectedAlert: null,
   isRightDrawerOpen: false,
   isCommandPaletteOpen: false,
-  searchQuery: '',
+  searchQuery: "",
   toasts: [],
 
   setCurrentPage: (page) => set({ currentPage: page }),
@@ -80,10 +83,11 @@ export const useAppStore = create<AppState>((set) => ({
   },
   toggleTheme: () =>
     set((state) => {
-      const nextTheme: AppTheme = state.theme === 'dark' ? 'light' : 'dark';
+      const nextTheme: AppTheme = state.theme === "dark" ? "light" : "dark";
       applyTheme(nextTheme);
       return { theme: nextTheme };
     }),
+  setIsMaximized: (isMaximized) => set({ isMaximized }),
   setOverview: (overview) => set({ overview }),
   setSelectedProcess: (proc) =>
     set({

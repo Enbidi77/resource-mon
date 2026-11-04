@@ -12,7 +12,7 @@ This document is the authoritative architectural and operational specification f
 
 - **Monorepo Management**: [Turborepo](https://turbo.build/) + [pnpm](https://pnpm.io/) workspaces
 - **Desktop Runtime**: [Electron 32](https://www.electronjs.org/) with multi-process architecture (Main, Context-Isolated Preload, React Renderer)
-  - Frameless custom workstation window (`frame: false`), transparent base (`enable-transparent-visuals`, `transparent: true`), Windows 11 Acrylic blur (`backgroundMaterial: "acrylic"`), and macOS Vibrancy (`vibrancy: "under-window"`)
+  - Frameless custom workstation window (`frame: false`), transparent base (`transparent: true`, `backgroundColor: "#00000000"`), custom 20px rounded window shell with specular borders, and macOS Vibrancy (`vibrancy: "under-window"`)
 - **UI Framework**: [React 19](https://react.dev/), [TypeScript 5.7](https://www.typescriptlang.org/), [Vite 8](https://vitejs.dev/) (`@electron-vite`), [Tailwind CSS](https://tailwindcss.com/)
 - **Design Language**: Apple Glass UI (Liquid Glass aesthetics, specular borders, backdrop blur, ambient mesh gradients, soft shadows, dark/light themes)
 - **State & Data Visualization**: [Zustand](https://github.com/pmndrs/zustand), [TanStack Query](https://tanstack.com/query), [Recharts](https://recharts.org/), [Lucide React](https://lucide.dev/)

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import {
   Shield,
   Search,
@@ -12,15 +12,20 @@ import {
 import { useAppStore } from "../../stores/useAppStore";
 
 export const TitleBar: React.FC = () => {
-  const { overview, setIsCommandPaletteOpen, theme, toggleTheme } =
-    useAppStore();
-  const [isMaximized, setIsMaximized] = useState(false);
+  const {
+    overview,
+    setIsCommandPaletteOpen,
+    theme,
+    toggleTheme,
+    isMaximized,
+    setIsMaximized,
+  } = useAppStore();
 
   useEffect(() => {
     if (window.sentinelAPI) {
       window.sentinelAPI.isWindowMaximized().then(setIsMaximized);
     }
-  }, []);
+  }, [setIsMaximized]);
 
   const handleMinimize = () => window.sentinelAPI?.minimizeWindow();
   const handleMaximize = async () => {
