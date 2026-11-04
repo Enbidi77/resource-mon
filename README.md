@@ -133,7 +133,12 @@ pnpm build
 
 # Start desktop app in development mode
 pnpm dev
+
+# Build Microsoft Store AppX package
+pnpm run release:appx
 ```
+
+For complete packaging, asset generation, and Partner Center submission guidelines, see the [Microsoft Store AppX Packaging Guide](docs/APPX_BUILD_GUIDE.md).
 
 ---
 

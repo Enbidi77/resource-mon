@@ -28,9 +28,9 @@
     "icon": "resources/icon.ico"
   },
   "appx": {
-    "identityName": "SentinelSecurity.SentinelDesktop",
-    "publisher": "CN=00000000-0000-0000-0000-000000000000",
-    "publisherDisplayName": "Sentinel Security",
+    "identityName": "Enbidi.SentinelDesktop",
+    "publisher": "CN=7D350121-9482-4DA4-B852-3D95D4F0BF11",
+    "publisherDisplayName": "Enbidi",
     "applicationId": "SentinelDesktop",
     "backgroundColor": "#070913",
     "showNameOnTiles": true,

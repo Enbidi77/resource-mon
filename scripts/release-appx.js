@@ -13,9 +13,9 @@
  *   pnpm run release:appx --arch x64
  *
  * Environment Variables (optional, for Microsoft Partner Center):
- *   MS_STORE_IDENTITY_NAME            e.g. "SentinelSecurity.SentinelDesktop"
- *   MS_STORE_PUBLISHER                e.g. "CN=A1B2C3D4-E5F6-7890-ABCD-EF1234567890"
- *   MS_STORE_PUBLISHER_DISPLAY_NAME   e.g. "Sentinel Security LLC"
+ *   MS_STORE_IDENTITY_NAME            e.g. "Enbidi.SentinelDesktop"
+ *   MS_STORE_PUBLISHER                e.g. "CN=7D350121-9482-4DA4-B852-3D95D4F0BF11"
+ *   MS_STORE_PUBLISHER_DISPLAY_NAME   e.g. "Enbidi"
  *   MS_STORE_APP_ID                   e.g. "SentinelDesktop"
  */
 
@@ -105,9 +105,9 @@ console.log(`• Target Arch:       ${arch}`);
 console.log(`• Release Dir:       ${RELEASE_DIR}\n`);
 
 // 2. Microsoft Store Partner Center Config
-const identityName = process.env.MS_STORE_IDENTITY_NAME || 'SentinelSecurity.SentinelDesktop';
-const publisher = process.env.MS_STORE_PUBLISHER || 'CN=00000000-0000-0000-0000-000000000000';
-const publisherDisplayName = process.env.MS_STORE_PUBLISHER_DISPLAY_NAME || 'Sentinel Security';
+const identityName = process.env.MS_STORE_IDENTITY_NAME || 'Enbidi.SentinelDesktop';
+const publisher = process.env.MS_STORE_PUBLISHER || 'CN=7D350121-9482-4DA4-B852-3D95D4F0BF11';
+const publisherDisplayName = process.env.MS_STORE_PUBLISHER_DISPLAY_NAME || 'Enbidi';
 const applicationId = process.env.MS_STORE_APP_ID || 'SentinelDesktop';
 
 if (publisher === 'CN=00000000-0000-0000-0000-000000000000') {
