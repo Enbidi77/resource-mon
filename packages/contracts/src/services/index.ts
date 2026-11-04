@@ -30,6 +30,7 @@ export const WindowsServiceSchema = z.object({
 });
 
 export type WindowsService = z.infer<typeof WindowsServiceSchema>;
+export type ServiceInfo = WindowsService;
 
 export const ServiceControlRequestSchema = z.object({
   serviceName: z.string(),

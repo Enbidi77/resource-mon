@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Cog, Search, RefreshCw, Play, Square, RotateCcw } from "lucide-react";
 import { useAppStore } from "../stores/useAppStore";
-import type { ServiceInfo } from "@sentinel/contracts";
+import type { WindowsService } from "@sentinel/contracts";
 import {
   GlassBadge,
   GlassButton,
@@ -11,7 +11,7 @@ import {
 
 export const ServicesPage: React.FC = () => {
   const { addToast } = useAppStore();
-  const [services, setServices] = useState<ServiceInfo[]>([]);
+  const [services, setServices] = useState<WindowsService[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export const ServicesPage: React.FC = () => {
       } else {
         addToast({
           type: "error",
-          message: res.errorMessage || `Failed to ${action} service`,
+          message: res.error || `Failed to ${action} service`,
         });
       }
     } catch {
