@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   ShieldAlert,
-  ShieldCheck,
   FileCheck,
   RefreshCw,
   CheckCircle2,
@@ -18,7 +17,7 @@ import {
   GlassSurface,
   GlassTabs,
   GlassTabPanel,
-  GlassTabItem,
+  type GlassTabItem,
 } from '../components/glass';
 import { SecurityAnalyzerSection } from './SecurityAnalyzerSection';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
@@ -94,11 +93,11 @@ export const SecurityPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h2 className="text-lg font-bold text-[var(--text-primary)] font-mono flex items-center gap-2">
+          <h2 className="text-lg font-bold text-text-primary font-mono flex items-center gap-2">
             <ShieldAlert className="w-5 h-5 text-red-400" />
             Host Defensive Security Center
           </h2>
-          <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+          <p className="text-xs text-text-secondary mt-0.5">
             Defensive posture assessment, process anomaly detection, and deep attack surface inspection
           </p>
         </div>
@@ -128,7 +127,7 @@ export const SecurityPage: React.FC = () => {
           <div className="grid grid-cols-12 gap-6">
             {/* Posture Score */}
             <GlassCard className="col-span-12 lg:col-span-4 p-5 flex flex-col justify-between items-center text-center">
-              <div className="w-full text-left text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider mb-2">
+              <div className="w-full text-left text-xs font-mono font-bold text-text-primary uppercase tracking-wider mb-2">
                 Host Defensive Posture
               </div>
 
@@ -139,7 +138,7 @@ export const SecurityPage: React.FC = () => {
                 size={220}
               />
 
-              <div className="w-full text-xs font-mono text-[var(--text-secondary)] pt-3 border-t border-[var(--glass-border-subtle)] flex justify-between items-center">
+              <div className="w-full text-xs font-mono text-text-secondary pt-3 border-t border-glass-border-subtle flex justify-between items-center">
                 <span>Privilege Elevation:</span>
                 <GlassBadge
                   variant={posture?.isElevatedAdmin ? 'success' : 'default'}
@@ -153,15 +152,15 @@ export const SecurityPage: React.FC = () => {
 
             {/* Protection Services Status */}
             <GlassCard className="col-span-12 lg:col-span-8 p-5 space-y-3">
-              <div className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider border-b border-[var(--glass-border-subtle)] pb-2">
+              <div className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider border-b border-glass-border-subtle pb-2">
                 Host Security Control Subsystems
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex items-center justify-between">
                   <div className="space-y-1">
-                    <div className="text-xs font-bold text-[var(--text-primary)] font-mono">Antivirus Engine</div>
-                    <div className="text-[11px] text-[var(--text-secondary)] font-mono">
+                    <div className="text-xs font-bold text-text-primary font-mono">Antivirus Engine</div>
+                    <div className="text-[11px] text-text-secondary font-mono">
                       {posture?.antivirusName || 'Windows Defender'}
                     </div>
                   </div>
@@ -172,8 +171,8 @@ export const SecurityPage: React.FC = () => {
 
                 <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex items-center justify-between">
                   <div className="space-y-1">
-                    <div className="text-xs font-bold text-[var(--text-primary)] font-mono">Host Firewall</div>
-                    <div className="text-[11px] text-[var(--text-secondary)] font-mono">Profile Enforcement</div>
+                    <div className="text-xs font-bold text-text-primary font-mono">Host Firewall</div>
+                    <div className="text-[11px] text-text-secondary font-mono">Profile Enforcement</div>
                   </div>
                   <GlassBadge variant={posture?.firewallActive ? 'success' : 'danger'} size="sm" dot>
                     {posture?.firewallActive ? 'ACTIVE' : 'DISABLED'}
@@ -182,8 +181,8 @@ export const SecurityPage: React.FC = () => {
 
                 <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex items-center justify-between">
                   <div className="space-y-1">
-                    <div className="text-xs font-bold text-[var(--text-primary)] font-mono">Secure Boot</div>
-                    <div className="text-[11px] text-[var(--text-secondary)] font-mono">UEFI Firmware State</div>
+                    <div className="text-xs font-bold text-text-primary font-mono">Secure Boot</div>
+                    <div className="text-[11px] text-text-secondary font-mono">UEFI Firmware State</div>
                   </div>
                   <GlassBadge variant={posture?.secureBootEnabled ? 'success' : 'warning'} size="sm" dot>
                     {posture?.secureBootEnabled ? 'ENABLED' : 'UNVERIFIED'}
@@ -192,8 +191,8 @@ export const SecurityPage: React.FC = () => {
 
                 <GlassSurface elevation="subtle" rounded="xl" className="p-3 flex items-center justify-between">
                   <div className="space-y-1">
-                    <div className="text-xs font-bold text-[var(--text-primary)] font-mono">User Account Control</div>
-                    <div className="text-[11px] text-[var(--text-secondary)] font-mono">Elevation Guard</div>
+                    <div className="text-xs font-bold text-text-primary font-mono">User Account Control</div>
+                    <div className="text-[11px] text-text-secondary font-mono">Elevation Guard</div>
                   </div>
                   <GlassBadge variant={posture?.uacEnabled ? 'success' : 'danger'} size="sm" dot>
                     {posture?.uacEnabled ? 'ENFORCED' : 'OFF'}
@@ -205,13 +204,13 @@ export const SecurityPage: React.FC = () => {
 
           {/* Row 2: File Integrity Monitoring (FIM) */}
           <GlassCard className="p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[var(--glass-border-subtle)] pb-3">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-glass-border-subtle pb-3">
               <div>
-                <h3 className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
+                <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider flex items-center gap-2">
                   <FileCheck className="w-4 h-4 text-cyan-400" />
                   File Integrity Monitoring (FIM)
                 </h3>
-                <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                <p className="text-[11px] text-text-secondary mt-0.5">
                   Monitors critical Windows driver and hosts file configurations for unauthorized tampering
                 </p>
               </div>
@@ -231,20 +230,20 @@ export const SecurityPage: React.FC = () => {
               <div className="space-y-3">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <GlassSurface elevation="subtle" rounded="xl" className="p-3 text-center">
-                    <div className="text-lg font-mono font-bold text-[var(--text-primary)]">{fimResult.scannedFiles}</div>
-                    <div className="text-[10px] text-[var(--text-secondary)] uppercase">Files Scanned</div>
+                    <div className="text-lg font-mono font-bold text-text-primary">{fimResult.scannedFiles}</div>
+                    <div className="text-[10px] text-text-secondary uppercase">Files Scanned</div>
                   </GlassSurface>
                   <GlassSurface elevation="subtle" rounded="xl" className="p-3 text-center">
                     <div className="text-lg font-mono font-bold text-amber-400">{fimResult.modifiedCount}</div>
-                    <div className="text-[10px] text-[var(--text-secondary)] uppercase">Modified</div>
+                    <div className="text-[10px] text-text-secondary uppercase">Modified</div>
                   </GlassSurface>
                   <GlassSurface elevation="subtle" rounded="xl" className="p-3 text-center">
                     <div className="text-lg font-mono font-bold text-emerald-400">{fimResult.addedCount}</div>
-                    <div className="text-[10px] text-[var(--text-secondary)] uppercase">Added</div>
+                    <div className="text-[10px] text-text-secondary uppercase">Added</div>
                   </GlassSurface>
                   <GlassSurface elevation="subtle" rounded="xl" className="p-3 text-center">
                     <div className="text-lg font-mono font-bold text-red-400">{fimResult.deletedCount}</div>
-                    <div className="text-[10px] text-[var(--text-secondary)] uppercase">Deleted</div>
+                    <div className="text-[10px] text-text-secondary uppercase">Deleted</div>
                   </GlassSurface>
                 </div>
 
@@ -262,7 +261,7 @@ export const SecurityPage: React.FC = () => {
                         ) : (
                           <ShieldAlert className="w-4 h-4 text-amber-400" />
                         )}
-                        <span className="text-[var(--text-primary)]">{entry.fileName}</span>
+                        <span className="text-text-primary">{entry.fileName}</span>
                       </div>
                       <GlassBadge
                         variant={entry.status === 'CLEAN' ? 'success' : 'warning'}
@@ -279,9 +278,9 @@ export const SecurityPage: React.FC = () => {
 
           {/* Row 3: Security Alerts & Incidents */}
           <GlassCard className="p-5 space-y-4">
-            <div className="flex justify-between items-center border-b border-[var(--glass-border-subtle)] pb-3">
+            <div className="flex justify-between items-center border-b border-glass-border-subtle pb-3">
               <div>
-                <h3 className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
+                <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider flex items-center gap-2">
                   <ShieldAlert className="w-4 h-4 text-red-400" />
                   Active Security Incidents & Anomaly Detections ({alerts.length})
                 </h3>
@@ -290,7 +289,7 @@ export const SecurityPage: React.FC = () => {
 
             <div className="space-y-2">
               {alerts.length === 0 && (
-                <div className="text-center py-6 text-xs text-[var(--text-secondary)] font-mono">
+                <div className="text-center py-6 text-xs text-text-secondary font-mono">
                   No active security threats or anomalies detected.
                 </div>
               )}
@@ -318,14 +317,14 @@ export const SecurityPage: React.FC = () => {
                     </GlassBadge>
 
                     <div>
-                      <div className="text-xs font-bold text-[var(--text-primary)] font-mono">{alert.title}</div>
-                      <div className="text-[11px] text-[var(--text-secondary)]">{alert.description}</div>
+                      <div className="text-xs font-bold text-text-primary font-mono">{alert.title}</div>
+                      <div className="text-[11px] text-text-secondary">{alert.description}</div>
                     </div>
                   </div>
 
-                  <div className="text-right text-[11px] font-mono text-[var(--text-tertiary)]">
+                  <div className="text-right text-[11px] font-mono text-text-tertiary">
                     <div>{formatTimestamp(alert.timestamp)}</div>
-                    <div className="text-[var(--text-secondary)] text-[10px]">{alert.ruleId}</div>
+                    <div className="text-text-secondary text-[10px]">{alert.ruleId}</div>
                   </div>
                 </GlassSurface>
               ))}

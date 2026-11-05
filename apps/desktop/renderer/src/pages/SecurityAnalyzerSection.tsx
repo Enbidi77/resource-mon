@@ -2,18 +2,13 @@ import React, { useState, useEffect } from "react";
 import {
   ScanSearch,
   ShieldCheck,
-  ShieldAlert,
   AlertTriangle,
   CheckCircle2,
-  XCircle,
-  FileCode,
-  HardDrive,
   RefreshCw,
   Search,
   Lock,
   Unlock,
   Layers,
-  Activity,
   Binary,
 } from "lucide-react";
 import type {
@@ -23,7 +18,7 @@ import type {
   ProcessInfo,
 } from "@sentinel/contracts";
 import { useAppStore } from "../stores/useAppStore";
-import { formatBytes, formatTimestamp } from "@sentinel/shared";
+import { formatBytes } from "@sentinel/shared";
 import {
   GlassBadge,
   GlassButton,
@@ -32,6 +27,32 @@ import {
   GlassInput,
   GlassTableContainer,
 } from "../components/glass";
+
+interface StatTileProps {
+  label: string;
+  value: React.ReactNode;
+  subtitle: React.ReactNode;
+  valueColorClass?: string;
+}
+
+const StatTile: React.FC<StatTileProps> = ({
+  label,
+  value,
+  subtitle,
+  valueColorClass = "text-text-primary",
+}) => (
+  <GlassSurface elevation="subtle" rounded="xl" className="p-3.5 space-y-1">
+    <div className="text-[10px] font-mono uppercase tracking-wider text-text-tertiary">
+      {label}
+    </div>
+    <div className={`text-2xl font-mono font-bold ${valueColorClass}`}>
+      {value}
+    </div>
+    <div className="text-[11px] text-text-secondary font-mono">
+      {subtitle}
+    </div>
+  </GlassSurface>
+);
 
 export const SecurityAnalyzerSection: React.FC = () => {
   const { addToast } = useAppStore();
@@ -130,15 +151,20 @@ export const SecurityAnalyzerSection: React.FC = () => {
     }
   };
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleAnalyzeTarget(targetInput);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Banner & Audit Score Summary */}
       <GlassCard className="p-6 relative overflow-hidden">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[var(--glass-border-subtle)] pb-5">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-glass-border-subtle pb-5">
           <div className="space-y-1">
             <div className="flex items-center gap-2.5">
               <ScanSearch className="w-5 h-5 text-cyan-400" />
-              <h3 className="text-base font-bold text-[var(--text-primary)] font-mono">
+              <h3 className="text-base font-bold text-text-primary font-mono">
                 Host Attack Surface & Risk Analyzer
               </h3>
               {auditReport && (
@@ -158,7 +184,7 @@ export const SecurityAnalyzerSection: React.FC = () => {
                 </GlassBadge>
               )}
             </div>
-            <p className="text-xs text-[var(--text-secondary)] font-mono">
+            <p className="text-xs text-text-secondary font-mono">
               On-demand CIS hardening audits, unquoted service vulnerability
               detection, autostart persistence inspection, and Shannon entropy
               analysis.
@@ -180,7 +206,7 @@ export const SecurityAnalyzerSection: React.FC = () => {
         {isAuditing && !auditReport && (
           <div className="py-10 flex flex-col items-center justify-center gap-2.5 text-cyan-400">
             <RefreshCw className="w-6 h-6 animate-spin text-cyan-400" />
-            <span className="text-xs font-mono text-[var(--text-secondary)]">
+            <span className="text-xs font-mono text-text-secondary">
               Auditing Windows security hardening, services, and autostart
               persistence...
             </span>
@@ -190,86 +216,65 @@ export const SecurityAnalyzerSection: React.FC = () => {
         {/* Score & Counters */}
         {auditReport && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-5">
-            <GlassSurface
-              elevation="subtle"
-              rounded="xl"
-              className="p-3.5 space-y-1"
-            >
-              <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-tertiary)]">
-                Audit Posture Score
-              </div>
-              <div className="text-2xl font-mono font-bold text-cyan-400">
-                {auditReport.overallAuditScore}
-                <span className="text-xs text-[var(--text-secondary)] font-normal">
-                  {" "}
-                  / 100
-                </span>
-              </div>
-              <div className="text-[11px] text-[var(--text-secondary)] font-mono">
-                {auditReport.statusLevel} posture
-              </div>
-            </GlassSurface>
+            <StatTile
+              label="Audit Posture Score"
+              valueColorClass="text-cyan-400"
+              value={
+                <>
+                  {auditReport.overallAuditScore}
+                  <span className="text-xs text-text-secondary font-normal">
+                    {" "}
+                    / 100
+                  </span>
+                </>
+              }
+              subtitle={`${auditReport.statusLevel} posture`}
+            />
 
-            <GlassSurface
-              elevation="subtle"
-              rounded="xl"
-              className="p-3.5 space-y-1"
-            >
-              <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-tertiary)]">
-                Hardening Checks
-              </div>
-              <div className="text-2xl font-mono font-bold text-emerald-400">
-                {
-                  auditReport.hardeningChecks.filter((c) => c.status === "PASS")
-                    .length
-                }
-                <span className="text-xs text-[var(--text-secondary)] font-normal">
-                  {" "}
-                  / {auditReport.hardeningChecks.length} Passed
+            <StatTile
+              label="Hardening Checks"
+              valueColorClass="text-emerald-400"
+              value={
+                <>
+                  {
+                    auditReport.hardeningChecks.filter((c) => c.status === "PASS")
+                      .length
+                  }
+                  <span className="text-xs text-text-secondary font-normal">
+                    {" "}
+                    / {auditReport.hardeningChecks.length} Passed
+                  </span>
+                </>
+              }
+              subtitle={
+                <span className="text-amber-400">
+                  {
+                    auditReport.hardeningChecks.filter((c) => c.status !== "PASS")
+                      .length
+                  }{" "}
+                  flagged items
                 </span>
-              </div>
-              <div className="text-[11px] text-amber-400 font-mono">
-                {
-                  auditReport.hardeningChecks.filter((c) => c.status !== "PASS")
-                    .length
-                }{" "}
-                flagged items
-              </div>
-            </GlassSurface>
+              }
+            />
 
-            <GlassSurface
-              elevation="subtle"
-              rounded="xl"
-              className="p-3.5 space-y-1"
-            >
-              <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-tertiary)]">
-                Unquoted Services
-              </div>
-              <div className="text-2xl font-mono font-bold text-[var(--text-primary)]">
-                {auditReport.unquotedServices.length}
-              </div>
-              <div className="text-[11px] font-mono text-[var(--text-secondary)]">
-                {auditReport.unquotedServices.length === 0 ? (
+            <StatTile
+              label="Unquoted Services"
+              value={auditReport.unquotedServices.length}
+              subtitle={
+                auditReport.unquotedServices.length === 0 ? (
                   <span className="text-emerald-400">No vulnerable paths</span>
                 ) : (
                   <span className="text-amber-400">Binary planting risk</span>
-                )}
-              </div>
-            </GlassSurface>
+                )
+              }
+            />
 
-            <GlassSurface
-              elevation="subtle"
-              rounded="xl"
-              className="p-3.5 space-y-1"
-            >
-              <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-tertiary)]">
-                Persistence Items
-              </div>
-              <div className="text-2xl font-mono font-bold text-purple-400">
-                {auditReport.persistenceItems.length}
-              </div>
-              <div className="text-[11px] font-mono text-[var(--text-secondary)]">
-                {auditReport.persistenceItems.filter(
+            <StatTile
+              label="Persistence Items"
+              valueColorClass="text-purple-400"
+              value={auditReport.persistenceItems.length}
+              subtitle={
+                auditReport.persistenceItems.filter(
                   (p) => p.risk === "SUSPICIOUS",
                 ).length > 0 ? (
                   <span className="text-red-400">
@@ -282,9 +287,9 @@ export const SecurityAnalyzerSection: React.FC = () => {
                   </span>
                 ) : (
                   <span className="text-emerald-400">All baselined clean</span>
-                )}
-              </div>
-            </GlassSurface>
+                )
+              }
+            />
           </div>
         )}
       </GlassCard>
@@ -292,53 +297,53 @@ export const SecurityAnalyzerSection: React.FC = () => {
       {/* Forensic Binary & Process Target Inspector */}
       <GlassCard className="p-5 space-y-4">
         <div>
-          <h4 className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
+          <h4 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider flex items-center gap-2">
             <Binary className="w-4 h-4 text-cyan-400" />
             Forensic Target Inspector & Shannon Entropy Analyzer
           </h4>
-          <p className="text-[11px] text-[var(--text-secondary)] mt-0.5 font-mono">
+          <p className="text-[11px] text-text-secondary mt-0.5 font-mono">
             Inspect any executable file path or running PID for Authenticode
             certificate trust, section entropy, and crypter/packer indicators.
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2.5">
+        {/* Accessible Form Submission */}
+        <form onSubmit={handleFormSubmit} className="flex flex-col sm:flex-row gap-2.5">
           <div className="flex-1 relative">
             <GlassInput
               value={targetInput}
               onChange={(e) => setTargetInput(e.target.value)}
               placeholder="Enter executable path (e.g. C:\Windows\System32\cmd.exe) or PID..."
-              icon={<Search className="w-4 h-4 text-[var(--text-tertiary)]" />}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleAnalyzeTarget(targetInput);
-              }}
+              icon={<Search className="w-4 h-4 text-text-tertiary" />}
+              aria-label="Target binary path or process ID"
             />
           </div>
 
           <GlassButton
+            type="submit"
             variant="glass"
             size="md"
-            onClick={() => handleAnalyzeTarget(targetInput)}
             loading={isAnalyzingTarget}
             icon={<ScanSearch className="w-4 h-4 text-cyan-400" />}
           >
             Analyze Target
           </GlassButton>
-        </div>
+        </form>
 
         {/* Quick Process Shortcuts */}
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
-          <span className="text-[10px] font-mono text-[var(--text-tertiary)] uppercase mr-1">
+          <span className="text-[10px] font-mono text-text-tertiary uppercase mr-1">
             Running Procs:
           </span>
           {runningProcesses.slice(0, 5).map((p) => (
             <button
               key={p.pid}
+              type="button"
               onClick={() => {
                 setTargetInput(p.executablePath || p.name);
                 handleAnalyzeTarget(p.executablePath || p.name);
               }}
-              className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-[var(--glass-surface-subtle)] hover:bg-[var(--glass-surface-elevated)] border border-[var(--glass-border-subtle)] text-[var(--text-secondary)] hover:text-cyan-400 transition-colors cursor-pointer"
+              className="text-[10px] font-mono px-2.5 py-1 rounded-lg bg-glass-surface-subtle hover:bg-glass-surface-elevated border border-glass-border-subtle text-text-secondary hover:text-cyan-400 hover:border-glass-border transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400"
             >
               {p.name} ({p.pid})
             </button>
@@ -352,13 +357,13 @@ export const SecurityAnalyzerSection: React.FC = () => {
             rounded="xl"
             className="p-4 space-y-3 mt-3"
           >
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-[var(--glass-border-subtle)] pb-2.5">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-glass-border-subtle pb-2.5">
               <div>
-                <div className="text-xs font-mono font-bold text-[var(--text-primary)]">
+                <div className="text-xs font-mono font-bold text-text-primary">
                   {analyzedTarget.target}
                 </div>
                 {analyzedTarget.sha256 && (
-                  <div className="text-[10px] font-mono text-[var(--text-tertiary)] break-all">
+                  <div className="text-[10px] font-mono text-text-tertiary break-all">
                     SHA-256: {analyzedTarget.sha256}
                   </div>
                 )}
@@ -386,7 +391,7 @@ export const SecurityAnalyzerSection: React.FC = () => {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono pt-1">
               <div>
-                <div className="text-[10px] text-[var(--text-tertiary)] uppercase">
+                <div className="text-[10px] text-text-tertiary uppercase">
                   Shannon Entropy
                 </div>
                 <div className="font-semibold text-cyan-400 flex items-center gap-1.5 mt-0.5">
@@ -400,10 +405,10 @@ export const SecurityAnalyzerSection: React.FC = () => {
               </div>
 
               <div>
-                <div className="text-[10px] text-[var(--text-tertiary)] uppercase">
+                <div className="text-[10px] text-text-tertiary uppercase">
                   Digital Signature
                 </div>
-                <div className="font-semibold text-[var(--text-primary)] flex items-center gap-1.5 mt-0.5">
+                <div className="font-semibold text-text-primary flex items-center gap-1.5 mt-0.5">
                   {analyzedTarget.authenticodeStatus === "SIGNED_VERIFIED" ? (
                     <span className="text-emerald-400 flex items-center gap-1">
                       <Lock className="w-3 h-3" /> Verified
@@ -417,19 +422,19 @@ export const SecurityAnalyzerSection: React.FC = () => {
               </div>
 
               <div>
-                <div className="text-[10px] text-[var(--text-tertiary)] uppercase">
+                <div className="text-[10px] text-text-tertiary uppercase">
                   Certificate Signer
                 </div>
-                <div className="text-[11px] text-[var(--text-secondary)] truncate mt-0.5">
+                <div className="text-[11px] text-text-secondary truncate mt-0.5">
                   {analyzedTarget.signer || "No publisher"}
                 </div>
               </div>
 
               <div>
-                <div className="text-[10px] text-[var(--text-tertiary)] uppercase">
+                <div className="text-[10px] text-text-tertiary uppercase">
                   Binary File Size
                 </div>
-                <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                <div className="text-[11px] text-text-secondary mt-0.5">
                   {formatBytes(analyzedTarget.sizeBytes)}
                 </div>
               </div>
@@ -437,7 +442,7 @@ export const SecurityAnalyzerSection: React.FC = () => {
 
             {/* Risk Factors */}
             {analyzedTarget.riskFactors.length > 0 && (
-              <div className="space-y-1.5 pt-2 border-t border-[var(--glass-border-subtle)]">
+              <div className="space-y-1.5 pt-2 border-t border-glass-border-subtle">
                 <div className="text-[10px] font-mono uppercase text-amber-400 font-semibold">
                   Detected Risk Indicators:
                 </div>
@@ -445,7 +450,7 @@ export const SecurityAnalyzerSection: React.FC = () => {
                   {analyzedTarget.riskFactors.map((factor, idx) => (
                     <div
                       key={idx}
-                      className="text-xs font-mono text-[var(--text-secondary)] flex items-center gap-2"
+                      className="text-xs font-mono text-text-secondary flex items-center gap-2"
                     >
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <span>{factor}</span>
@@ -458,16 +463,16 @@ export const SecurityAnalyzerSection: React.FC = () => {
         )}
       </GlassCard>
 
-      {/* Hardening Checklist & Unquoted Services */}
+      {/* Hardening Checklist & Attack Surface Vulnerabilities */}
       <div className="grid grid-cols-12 gap-6">
         {/* CIS Hardening Checks */}
         <GlassCard className="col-span-12 lg:col-span-7 p-5 space-y-3">
-          <div className="flex justify-between items-center border-b border-[var(--glass-border-subtle)] pb-2.5">
-            <h4 className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
+          <div className="flex justify-between items-center border-b border-glass-border-subtle pb-2.5">
+            <h4 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
               CIS Host Hardening & OS Protection Audit
             </h4>
-            <span className="text-[10px] font-mono text-[var(--text-tertiary)]">
+            <span className="text-[10px] font-mono text-text-tertiary">
               {auditReport?.hardeningChecks.length || 0} checks
             </span>
           </div>
@@ -481,16 +486,16 @@ export const SecurityAnalyzerSection: React.FC = () => {
                 className="p-3 space-y-1.5 text-xs font-mono"
               >
                 <div className="flex justify-between items-center">
-                  <span className="font-bold text-[var(--text-primary)]">
+                  <span className="font-bold text-text-primary">
                     {check.title}
                   </span>
                   {getStatusBadge(check.status)}
                 </div>
-                <div className="text-[11px] text-[var(--text-secondary)]">
+                <div className="text-[11px] text-text-secondary">
                   {check.details}
                 </div>
                 {check.status !== "PASS" && (
-                  <div className="text-[10px] text-amber-400/90 pt-1 border-t border-[var(--glass-border-subtle)]">
+                  <div className="text-[10px] text-amber-400/90 pt-1 border-t border-glass-border-subtle">
                     Mitigation: {check.recommendation}
                   </div>
                 )}
@@ -502,18 +507,18 @@ export const SecurityAnalyzerSection: React.FC = () => {
         {/* Exposed Ports & Unquoted Services */}
         <GlassCard className="col-span-12 lg:col-span-5 p-5 space-y-4">
           <div>
-            <h4 className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
+            <h4 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-400" />
               Attack Surface Vulnerabilities
             </h4>
-            <div className="text-[11px] text-[var(--text-secondary)] mt-0.5 font-mono">
+            <div className="text-[11px] text-text-secondary mt-0.5 font-mono">
               Unquoted service binaries & exposed high-risk listeners
             </div>
           </div>
 
           {/* Unquoted Services */}
           <div className="space-y-2">
-            <div className="text-[11px] font-mono font-semibold text-[var(--text-primary)] flex justify-between">
+            <div className="text-[11px] font-mono font-semibold text-text-primary flex justify-between">
               <span>Unquoted Service Paths (CWE-428):</span>
               <span className="text-cyan-400">
                 {auditReport?.unquotedServices?.length || 0}
@@ -541,7 +546,7 @@ export const SecurityAnalyzerSection: React.FC = () => {
                     <div className="font-bold text-amber-400">
                       {svc.displayName}
                     </div>
-                    <div className="text-[10px] text-[var(--text-secondary)] truncate">
+                    <div className="text-[10px] text-text-secondary truncate">
                       {svc.binPath}
                     </div>
                   </GlassSurface>
@@ -551,8 +556,8 @@ export const SecurityAnalyzerSection: React.FC = () => {
           </div>
 
           {/* Exposed External Ports */}
-          <div className="space-y-2 pt-2 border-t border-[var(--glass-border-subtle)]">
-            <div className="text-[11px] font-mono font-semibold text-[var(--text-primary)] flex justify-between">
+          <div className="space-y-2 pt-2 border-t border-glass-border-subtle">
+            <div className="text-[11px] font-mono font-semibold text-text-primary flex justify-between">
               <span>Exposed External Listening Ports:</span>
               <span className="text-cyan-400">
                 {auditReport?.exposedPorts?.length || 0}
@@ -578,13 +583,13 @@ export const SecurityAnalyzerSection: React.FC = () => {
                     className="p-2.5 text-xs font-mono flex justify-between items-center"
                   >
                     <div>
-                      <span className="font-bold text-[var(--text-primary)]">
+                      <span className="font-bold text-text-primary">
                         :{port.port}
                       </span>{" "}
-                      <span className="text-[10px] text-[var(--text-secondary)]">
+                      <span className="text-[10px] text-text-secondary">
                         ({port.serviceName})
                       </span>
-                      <div className="text-[10px] text-[var(--text-tertiary)]">
+                      <div className="text-[10px] text-text-tertiary">
                         PID {port.pid} ({port.processName})
                       </div>
                     </div>
@@ -604,14 +609,14 @@ export const SecurityAnalyzerSection: React.FC = () => {
 
       {/* Autostart Persistence Mechanisms Hunter */}
       <GlassCard className="p-5 space-y-3">
-        <div className="flex justify-between items-center border-b border-[var(--glass-border-subtle)] pb-2.5">
+        <div className="flex justify-between items-center border-b border-glass-border-subtle pb-2.5">
           <div>
-            <h4 className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
+            <h4 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider flex items-center gap-2">
               <Layers className="w-4 h-4 text-purple-400" />
               Windows Autostart & Persistence Mechanisms (
               {auditReport?.persistenceItems.length || 0})
             </h4>
-            <div className="text-[11px] text-[var(--text-secondary)] mt-0.5 font-mono">
+            <div className="text-[11px] text-text-secondary mt-0.5 font-mono">
               Enumerates Registry Run/RunOnce keys and Startup directories to
               detect stealth autostart persistence.
             </div>
@@ -619,70 +624,77 @@ export const SecurityAnalyzerSection: React.FC = () => {
         </div>
 
         <GlassTableContainer className="max-h-72 overflow-y-auto">
-          <table className="w-full text-left border-collapse text-xs font-mono">
-            <thead>
-              <tr className="border-b border-black/[0.08] dark:border-white/10 text-[10px] text-slate-600 dark:text-white/70 uppercase tracking-wider font-semibold">
-                <th className="p-3">Name</th>
-                <th className="p-3">Source Location</th>
-                <th className="p-3">Target Binary</th>
-                <th className="p-3">Authenticode Signer</th>
-                <th className="p-3 text-right">Risk Assessment</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-black/[0.06] dark:divide-white/[0.08]">
-              {auditReport?.persistenceItems.map((item) => (
-                <tr
-                  key={item.id}
-                  className="hover:bg-cyan-500/[0.06] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
-                  onClick={() => {
-                    setTargetInput(item.targetPath);
-                    handleAnalyzeTarget(item.targetPath);
-                  }}
-                >
-                  <td className="p-3 font-semibold text-slate-900 dark:text-white">
-                    {item.name}
-                  </td>
-                  <td className="p-3 text-[11px] text-slate-600 dark:text-white/70">
-                    <GlassBadge variant="default" size="sm">
-                      {item.source}
-                    </GlassBadge>
-                  </td>
-                  <td
-                    className="p-3 text-[11px] text-slate-600 dark:text-white/70 max-w-xs truncate"
-                    title={item.targetPath}
-                  >
-                    {item.targetPath}
-                  </td>
-                  <td className="p-3 text-[11px]">
-                    {item.isSigned ? (
-                      <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium">
-                        <Lock className="w-3 h-3" />{" "}
-                        {item.publisher || "Verified Signer"}
-                      </span>
-                    ) : (
-                      <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1 font-medium">
-                        <Unlock className="w-3 h-3" /> Unsigned
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-3 text-right">
-                    <GlassBadge
-                      variant={
-                        item.risk === "SUSPICIOUS"
-                          ? "danger"
-                          : item.risk === "UNVERIFIED"
-                            ? "warning"
-                            : "success"
-                      }
-                      size="sm"
-                    >
-                      {item.risk}
-                    </GlassBadge>
-                  </td>
+          {(!auditReport?.persistenceItems || auditReport.persistenceItems.length === 0) ? (
+            <div className="p-6 text-center text-xs font-mono text-text-secondary flex items-center justify-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              No unmanaged or suspicious persistence mechanisms discovered.
+            </div>
+          ) : (
+            <table className="w-full text-left border-collapse text-xs font-mono">
+              <thead>
+                <tr className="border-b border-glass-border-subtle text-[10px] text-text-secondary uppercase tracking-wider font-semibold">
+                  <th className="p-3">Name</th>
+                  <th className="p-3">Source Location</th>
+                  <th className="p-3">Target Binary</th>
+                  <th className="p-3">Authenticode Signer</th>
+                  <th className="p-3 text-right">Risk Assessment</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-glass-border-subtle">
+                {auditReport.persistenceItems.map((item) => (
+                  <tr
+                    key={item.id}
+                    className="hover:bg-cyan-500/[0.08] transition-colors cursor-pointer"
+                    onClick={() => {
+                      setTargetInput(item.targetPath);
+                      handleAnalyzeTarget(item.targetPath);
+                    }}
+                  >
+                    <td className="p-3 font-semibold text-text-primary">
+                      {item.name}
+                    </td>
+                    <td className="p-3 text-[11px] text-text-secondary">
+                      <GlassBadge variant="default" size="sm">
+                        {item.source}
+                      </GlassBadge>
+                    </td>
+                    <td
+                      className="p-3 text-[11px] text-text-secondary max-w-xs truncate"
+                      title={item.targetPath}
+                    >
+                      {item.targetPath}
+                    </td>
+                    <td className="p-3 text-[11px]">
+                      {item.isSigned ? (
+                        <span className="text-emerald-400 flex items-center gap-1 font-medium">
+                          <Lock className="w-3 h-3" />{" "}
+                          {item.publisher || "Verified Signer"}
+                        </span>
+                      ) : (
+                        <span className="text-amber-400 flex items-center gap-1 font-medium">
+                          <Unlock className="w-3 h-3" /> Unsigned
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3 text-right">
+                      <GlassBadge
+                        variant={
+                          item.risk === "SUSPICIOUS"
+                            ? "danger"
+                            : item.risk === "UNVERIFIED"
+                              ? "warning"
+                              : "success"
+                        }
+                        size="sm"
+                      >
+                        {item.risk}
+                      </GlassBadge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </GlassTableContainer>
       </GlassCard>
     </div>

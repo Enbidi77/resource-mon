@@ -3,6 +3,27 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
 @custom-variant light (&:where([data-theme="light"], [data-theme="light"] *, .light, .light *));
 
+@theme inline {
+  --color-glass-canvas: var(--glass-bg-canvas);
+  --color-glass-surface: var(--glass-surface);
+  --color-glass-surface-subtle: var(--glass-surface-subtle);
+  --color-glass-surface-elevated: var(--glass-surface-elevated);
+  --color-glass-surface-solid: var(--glass-surface-solid);
+  --color-glass-surface-sidebar: var(--glass-surface-sidebar);
+
+  --color-glass-border: var(--glass-border);
+  --color-glass-border-subtle: var(--glass-border-subtle);
+  --color-glass-border-hover: var(--glass-border-hover);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+
+  --radius-glass: var(--corner-radius);
+  --shadow-glass-soft: var(--glass-shadow-soft);
+  --shadow-glass-elevated: var(--glass-shadow-elevated);
+}
+
 :root {
   /* Apple Glass UI Tokens - Dark Appearance (Default) */
   --glass-bg-canvas: #070913;
