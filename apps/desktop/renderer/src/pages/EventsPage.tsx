@@ -118,11 +118,11 @@ export const EventsPage: React.FC = () => {
           </div>
         }
       >
-        <div className="divide-y divide-black/[0.06] dark:divide-white/[0.08]">
+        <div className="divide-y divide-black/6 dark:divide-white/8">
           {filtered.map((evt) => (
             <div
               key={evt.id}
-              className="grid grid-cols-12 px-4 py-2.5 items-center hover:bg-cyan-500/[0.06] dark:hover:bg-white/[0.05] text-xs font-mono transition-colors group"
+              className="grid grid-cols-12 px-4 py-2.5 items-center hover:bg-cyan-500/6 dark:hover:bg-white/5 text-xs font-mono transition-colors group"
             >
               <div className="col-span-1">
                 <GlassBadge

@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Wifi, Search, RefreshCw, ArrowDown, ArrowUp } from "lucide-react";
 import { useAppStore } from "../stores/useAppStore";
-import type {
-  NetworkConnectionInfo,
-  NetworkInterfaceInfo,
-} from "@sentinel/contracts";
+import type { NetworkConnection, NetworkInterface } from "@sentinel/contracts";
 import { formatSpeed } from "@sentinel/shared";
 import {
   GlassBadge,
@@ -16,8 +13,8 @@ import {
 
 export const NetworkPage: React.FC = () => {
   const { setSelectedConnection, addToast } = useAppStore();
-  const [connections, setConnections] = useState<NetworkConnectionInfo[]>([]);
-  const [interfaces, setInterfaces] = useState<NetworkInterfaceInfo[]>([]);
+  const [connections, setConnections] = useState<NetworkConnection[]>([]);
+  const [interfaces, setInterfaces] = useState<NetworkInterface[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -107,7 +104,7 @@ export const NetworkPage: React.FC = () => {
             className="p-4 space-y-2"
           >
             <div className="flex justify-between items-start">
-              <span className="text-xs font-mono font-bold text-slate-900 dark:text-white truncate max-w-[180px]">
+              <span className="text-xs font-mono font-bold text-slate-900 dark:text-white truncate max-w-45">
                 {iface.ifaceName || iface.iface}
               </span>
               <GlassBadge variant="info" size="sm">
@@ -130,7 +127,7 @@ export const NetworkPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex justify-between items-center text-[10px] font-mono pt-1 text-slate-500 dark:text-white/60 border-t border-black/[0.06] dark:border-white/10">
+            <div className="flex justify-between items-center text-[10px] font-mono pt-1 text-slate-500 dark:text-white/60 border-t border-black/6 dark:border-white/10">
               <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
                 <ArrowDown className="w-3 h-3" />{" "}
                 {formatSpeed(iface.rxSec || 0)}
@@ -163,12 +160,12 @@ export const NetworkPage: React.FC = () => {
           </div>
         }
       >
-        <div className="divide-y divide-black/[0.06] dark:divide-white/[0.08]">
+        <div className="divide-y divide-black/6 dark:divide-white/8">
           {filtered.map((conn) => (
             <div
               key={conn.id}
               onClick={() => setSelectedConnection(conn)}
-              className="grid grid-cols-12 px-4 py-2 items-center hover:bg-blue-500/[0.06] dark:hover:bg-white/[0.05] cursor-pointer transition-colors text-xs font-mono group"
+              className="grid grid-cols-12 px-4 py-2 items-center hover:bg-blue-500/6 dark:hover:bg-white/5 cursor-pointer transition-colors text-xs font-mono group"
             >
               <div className="col-span-1 text-blue-600 dark:text-blue-400 font-bold">
                 {conn.protocol}

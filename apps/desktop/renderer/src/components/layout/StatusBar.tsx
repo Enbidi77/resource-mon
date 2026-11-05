@@ -14,7 +14,7 @@ export const StatusBar: React.FC = () => {
   const { overview } = useAppStore();
 
   return (
-    <footer className="h-8 w-full bg-white/70 dark:bg-black/25 backdrop-blur-3xl backdrop-saturate-200 border-t border-black/[0.08] dark:border-white/10 flex items-center justify-between px-3 text-[11px] text-slate-600 dark:text-white/60 font-mono select-none z-40 shadow-sm">
+    <footer className="h-8 w-full bg-white/70 dark:bg-black/25 backdrop-blur-3xl backdrop-saturate-200 border-t border-black/8 dark:border-white/10 flex items-center justify-between px-3 text-[11px] text-slate-600 dark:text-white/60 font-mono select-none z-40 shadow-sm">
       {/* Left: Stream Controller & Collector Health */}
       <div className="flex items-center gap-3">
         <button
@@ -50,7 +50,7 @@ export const StatusBar: React.FC = () => {
           <select
             value={intervalMs}
             onChange={(e) => setIntervalMs(Number(e.target.value))}
-            className="bg-black/[0.04] dark:bg-white/[0.05] text-slate-800 dark:text-white/80 rounded-md px-1.5 py-0.5 border border-black/[0.08] dark:border-white/10 outline-none cursor-pointer hover:border-black/[0.15] dark:hover:border-white/20 transition-colors"
+            className="bg-black/4 dark:bg-white/5 text-slate-800 dark:text-white/80 rounded-md px-1.5 py-0.5 border border-black/8 dark:border-white/10 outline-none cursor-pointer hover:border-black/15 dark:hover:border-white/20 transition-colors"
           >
             <option
               value={500}

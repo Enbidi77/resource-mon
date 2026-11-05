@@ -98,7 +98,7 @@ export const App: React.FC = () => {
 
   return (
     <div
-      className={`h-screen w-screen flex flex-col bg-[var(--glass-bg-canvas)] text-[var(--text-primary)] overflow-hidden font-sans relative selection:bg-cyan-500/30 selection:text-cyan-800 dark:selection:text-cyan-200 transition-all duration-150 ${
+      className={`h-screen w-screen flex flex-col bg-glass-canvas text-text-primary overflow-hidden font-sans relative selection:bg-cyan-500/30 selection:text-cyan-800 dark:selection:text-cyan-200 transition-all duration-150 ${
         isMaximized
           ? "rounded-none border-none"
           : "rounded-[20px] border border-black/10 dark:border-white/15 shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
@@ -110,19 +110,19 @@ export const App: React.FC = () => {
         aria-hidden="true"
       >
         {/* Dark cosmic gradient base mesh (Active only in dark mode) */}
-        <div className="hidden dark:block absolute inset-0 bg-gradient-to-tr from-[#060814] via-[#090d1f] to-[#0e071c] opacity-95" />
+        <div className="hidden dark:block absolute inset-0 bg-linear-to-tr from-[#060814] via-[#090d1f] to-[#0e071c] opacity-95" />
 
         {/* Light pastel ambient base mesh (Active only in light mode) */}
-        <div className="block dark:hidden absolute inset-0 bg-gradient-to-tr from-[#eef2f8] via-[#f4f7fb] to-[#faf5fc]" />
+        <div className="block dark:hidden absolute inset-0 bg-linear-to-tr from-[#eef2f8] via-[#f4f7fb] to-[#faf5fc]" />
 
         {/* Top-left vibrant cyan / sky bloom */}
-        <div className="absolute -top-24 -left-20 w-[34rem] h-[34rem] rounded-full bg-cyan-400/20 dark:bg-cyan-500/25 blur-[140px]" />
+        <div className="absolute -top-24 -left-20 w-136 h-[34rem] rounded-full bg-cyan-400/20 dark:bg-cyan-500/25 blur-[140px]" />
 
         {/* Center / upper-right electric cobalt blue illumination */}
-        <div className="absolute top-8 left-1/3 w-[40rem] h-[40rem] rounded-full bg-blue-400/18 dark:bg-blue-600/35 blur-[160px]" />
+        <div className="absolute top-8 left-1/3 w-160 h-[40rem] rounded-full bg-blue-400/18 dark:bg-blue-600/35 blur-[160px]" />
 
         {/* Center-right & middle vivid magenta / pink bloom */}
-        <div className="absolute top-1/4 -right-16 w-[42rem] h-[42rem] rounded-full bg-fuchsia-400/20 dark:bg-fuchsia-600/35 blur-[160px]" />
+        <div className="absolute top-1/4 -right-16 w-[42rem] h-168 rounded-full bg-fuchsia-400/20 dark:bg-fuchsia-600/35 blur-[160px]" />
 
         {/* Bottom-right / center deep royal purple & rose glow */}
         <div className="absolute -bottom-24 right-1/4 w-[38rem] h-[38rem] rounded-full bg-purple-400/18 dark:bg-purple-600/30 blur-[150px]" />
