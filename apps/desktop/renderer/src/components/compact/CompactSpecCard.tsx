@@ -63,11 +63,11 @@ export const CompactSpecCard: React.FC<CompactSpecCardProps> = React.memo(
 
         {/* Primary & Secondary Values */}
         <div className="flex items-baseline justify-between gap-2 mb-1.5 relative z-10">
-          <div className="text-sm font-bold font-mono text-slate-900 dark:text-white tracking-tight">
+          <div className="text-sm font-bold font-mono text-slate-900 dark:text-white tracking-tight tabular-nums">
             {value.primary}
           </div>
           {value.secondary && (
-            <div className="text-[10px] font-mono text-slate-600 dark:text-white/60 truncate text-right">
+            <div className="text-[10px] font-mono text-slate-600 dark:text-white/60 truncate text-right tabular-nums">
               {value.secondary}
             </div>
           )}

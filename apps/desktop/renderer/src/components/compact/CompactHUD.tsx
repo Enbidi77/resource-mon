@@ -253,7 +253,7 @@ export const CompactHUD: React.FC<CompactHUDProps> = ({
       )}
 
       {/* Main Telemetry Body Container */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-2.5 z-10 relative">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-2.5 z-10 relative [scrollbar-gutter:stable]">
         {activeSpecs.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-4 text-slate-400 font-mono text-xs">
             <Layers className="w-6 h-6 mb-2 opacity-50" />
@@ -268,17 +268,18 @@ export const CompactHUD: React.FC<CompactHUDProps> = ({
         ) : isUltraCompact ? (
           /* Ultra-compact density: render slim pills */
           settings.layoutMode === "horizontal" ? (
-            <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none">
+            <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none w-full">
               {activeSpecs.map((spec) => (
-                <CompactSpecPill
-                  key={spec.id}
-                  spec={spec}
-                  context={{ ...context, config: getSpecConfig(spec.id) }}
-                />
+                <div key={spec.id} className="min-w-[150px] shrink-0">
+                  <CompactSpecPill
+                    spec={spec}
+                    context={{ ...context, config: getSpecConfig(spec.id) }}
+                  />
+                </div>
               ))}
             </div>
           ) : settings.layoutMode === "grid" ? (
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 gap-1.5 w-full">
               {activeSpecs.map((spec) => (
                 <CompactSpecPill
                   key={spec.id}
@@ -288,7 +289,7 @@ export const CompactHUD: React.FC<CompactHUDProps> = ({
               ))}
             </div>
           ) : (
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 w-full">
               {activeSpecs.map((spec) => (
                 <CompactSpecPill
                   key={spec.id}
