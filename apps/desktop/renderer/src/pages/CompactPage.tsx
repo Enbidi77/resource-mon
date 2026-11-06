@@ -176,12 +176,12 @@ export const CompactPage: React.FC = () => {
                 <label className="text-[11px] font-mono text-slate-500 dark:text-white/60">
                   Gauge Style
                 </label>
-                <div className="grid grid-cols-4 gap-1">
-                  {(["bar", "sparkline", "gauge", "minimal"] as CompactVisualGauge[]).map((g) => (
+                <div className="grid grid-cols-5 gap-1">
+                  {(["bar", "sparkline", "chart", "gauge", "minimal"] as CompactVisualGauge[]).map((g) => (
                     <button
                       key={g}
                       onClick={() => setGaugeStyle(g)}
-                      className={`py-1.5 px-2 rounded-lg border text-[10px] font-mono transition-all truncate cursor-pointer ${
+                      className={`py-1.5 px-1.5 text-center rounded-lg border text-[10px] font-mono transition-all truncate cursor-pointer ${
                         settings.gaugeStyle === g
                           ? "bg-cyan-500/20 border-cyan-400/50 text-cyan-600 dark:text-cyan-300 font-semibold"
                           : "bg-white/5 border-white/10 text-slate-400 hover:text-white"

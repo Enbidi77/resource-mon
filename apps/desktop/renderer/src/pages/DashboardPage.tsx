@@ -3,17 +3,9 @@ import { Activity, Cpu, Layers, ShieldAlert, Wifi, Zap } from "lucide-react";
 import { useMetricsStore } from "../stores/useMetricsStore";
 import { useAppStore } from "../stores/useAppStore";
 import { ArcGauge } from "../components/common/ArcGauge";
+import { TelemetryAreaChart } from "../components/common";
 import { GlassCard } from "../components/glass";
 import { formatBytes, formatPercentage, formatSpeed } from "@sentinel/shared";
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-} from "recharts";
 
 export const DashboardPage: React.FC = () => {
   const { current, history } = useMetricsStore();
@@ -201,106 +193,35 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="h-68 w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={displayHistory}>
-                <defs>
-                  <linearGradient
-                    id="cpuGlassGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="5%"
-                      stopColor={isLight ? "#0284c7" : "#06b6d4"}
-                      stopOpacity={isLight ? 0.35 : 0.45}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor={isLight ? "#0284c7" : "#06b6d4"}
-                      stopOpacity={0.02}
-                    />
-                  </linearGradient>
-                  <linearGradient
-                    id="memGlassGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="5%"
-                      stopColor={isLight ? "#9333ea" : "#a855f7"}
-                      stopOpacity={isLight ? 0.3 : 0.4}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor={isLight ? "#9333ea" : "#a855f7"}
-                      stopOpacity={0.02}
-                    />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  stroke={
-                    isLight
-                      ? "rgba(0, 0, 0, 0.06)"
-                      : "rgba(255, 255, 255, 0.08)"
-                  }
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="time"
-                  stroke={isLight ? "#64748b" : "rgba(255, 255, 255, 0.4)"}
-                  fontSize={10}
-                  tickLine={false}
-                  fontFamily="monospace"
-                />
-                <YAxis
-                  domain={[0, 100]}
-                  ticks={[0, 25, 50, 75, 100]}
-                  stroke={isLight ? "#64748b" : "rgba(255, 255, 255, 0.4)"}
-                  fontSize={10}
-                  tickLine={false}
-                  fontFamily="monospace"
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: isLight
-                      ? "rgba(255, 255, 255, 0.95)"
-                      : "rgba(11, 14, 23, 0.88)",
-                    backdropFilter: "blur(20px)",
-                    borderColor: isLight
-                      ? "rgba(0, 0, 0, 0.1)"
-                      : "rgba(255, 255, 255, 0.15)",
-                    borderRadius: "14px",
-                    fontSize: "12px",
-                    color: isLight ? "#0f172a" : "#ffffff",
-                    boxShadow: isLight
-                      ? "0 10px 30px rgba(0,0,0,0.08)"
-                      : "0 10px 30px rgba(0,0,0,0.5)",
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="cpu"
-                  stroke={isLight ? "#0284c7" : "#22d3ee"}
-                  strokeWidth={2.5}
-                  fillOpacity={1}
-                  fill="url(#cpuGlassGradient)"
-                  isAnimationActive={false}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="memoryPercent"
-                  stroke={isLight ? "#9333ea" : "#c084fc"}
-                  strokeWidth={2.5}
-                  fillOpacity={1}
-                  fill="url(#memGlassGradient)"
-                  isAnimationActive={false}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <TelemetryAreaChart
+              data={displayHistory}
+              height="100%"
+              series={[
+                {
+                  dataKey: "cpu",
+                  name: "CPU %",
+                  stroke: isLight ? "#0284c7" : "#22d3ee",
+                  gradientFrom: isLight ? "#0284c7" : "#06b6d4",
+                  gradientTo: isLight ? "#0284c7" : "#06b6d4",
+                  strokeWidth: 2.5,
+                },
+                {
+                  dataKey: "memoryPercent",
+                  name: "RAM %",
+                  stroke: isLight ? "#9333ea" : "#c084fc",
+                  gradientFrom: isLight ? "#9333ea" : "#a855f7",
+                  gradientTo: isLight ? "#9333ea" : "#a855f7",
+                  strokeWidth: 2.5,
+                },
+              ]}
+              showXAxis={true}
+              showYAxis={true}
+              showGrid={true}
+              showTooltip={true}
+              xAxisKey="time"
+              yDomain={[0, 100]}
+              yTicks={[0, 25, 50, 75, 100]}
+            />
           </div>
         </GlassCard>
       </div>

@@ -73,6 +73,7 @@ describe("Compact HUD Settings Contracts & Schemas", () => {
     expect(CompactVisualGaugeSchema.safeParse("bar").success).toBe(true);
     expect(CompactVisualGaugeSchema.safeParse("sparkline").success).toBe(true);
     expect(CompactVisualGaugeSchema.safeParse("gauge").success).toBe(true);
+    expect(CompactVisualGaugeSchema.safeParse("chart").success).toBe(true);
     expect(CompactVisualGaugeSchema.safeParse("minimal").success).toBe(true);
     expect(CompactVisualGaugeSchema.safeParse("pie").success).toBe(false);
   });

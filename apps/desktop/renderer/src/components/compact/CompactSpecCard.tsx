@@ -3,6 +3,7 @@ import type { SpecDefinition, SpecRenderContext } from "./types";
 import { CompactSparkline } from "./visuals/CompactSparkline";
 import { CompactMicroBar } from "./visuals/CompactMicroBar";
 import { CompactMicroGauge } from "./visuals/CompactMicroGauge";
+import { TelemetryAreaChart } from "../common";
 import { SPEC_SCHEMES, ACCENT_SCHEMES, STATUS_SCHEMES } from "./visuals/CompactThemeHelper";
 
 interface CompactSpecCardProps {
@@ -83,6 +84,36 @@ export const CompactSpecCard: React.FC<CompactSpecCardProps> = React.memo(
                 fillFrom={specScheme.fillGradientFrom}
                 fillTo={specScheme.fillGradientTo}
                 height={22}
+              />
+            </div>
+          ) : gaugeStyle === "chart" ? (
+            <div className="mt-1.5 h-14 w-full">
+              <TelemetryAreaChart
+                data={
+                  value.sparklinePoints && value.sparklinePoints.length > 1
+                    ? value.sparklinePoints
+                    : value.percent !== undefined
+                      ? [value.percent, value.percent]
+                      : [0, 0]
+                }
+                height={56}
+                series={[
+                  {
+                    dataKey: "value",
+                    name: spec.shortLabel,
+                    stroke: specScheme.stroke,
+                    gradientFrom: specScheme.fillGradientFrom,
+                    gradientTo: specScheme.fillGradientTo,
+                    strokeWidth: 2,
+                  },
+                ]}
+                showXAxis={false}
+                showYAxis={value.percent !== undefined}
+                showGrid={true}
+                showTooltip={true}
+                yDomain={value.percent !== undefined ? [0, 100] : undefined}
+                yTicks={value.percent !== undefined ? [0, 50, 100] : undefined}
+                compact={true}
               />
             </div>
           ) : gaugeStyle === "gauge" && value.percent !== undefined ? (

@@ -3,6 +3,7 @@ import type { SpecDefinition, SpecRenderContext } from "./types";
 import { CompactSparkline } from "./visuals/CompactSparkline";
 import { CompactMicroBar } from "./visuals/CompactMicroBar";
 import { CompactMicroGauge } from "./visuals/CompactMicroGauge";
+import { TelemetryAreaChart } from "../common";
 import { SPEC_SCHEMES, ACCENT_SCHEMES } from "./visuals/CompactThemeHelper";
 
 interface CompactSpecPillProps {
@@ -49,6 +50,35 @@ export const CompactSpecPill: React.FC<CompactSpecPillProps> = React.memo(
                 fillFrom={specScheme.fillGradientFrom}
                 fillTo={specScheme.fillGradientTo}
                 height={16}
+              />
+            </div>
+          ) : settings.gaugeStyle === "chart" ? (
+            <div className="w-16 h-5 shrink-0 flex items-center justify-end">
+              <TelemetryAreaChart
+                data={
+                  value.sparklinePoints && value.sparklinePoints.length > 1
+                    ? value.sparklinePoints
+                    : value.percent !== undefined
+                      ? [value.percent, value.percent]
+                      : [0, 0]
+                }
+                height={20}
+                width={64}
+                series={[
+                  {
+                    dataKey: "value",
+                    name: spec.shortLabel,
+                    stroke: specScheme.stroke,
+                    gradientFrom: specScheme.fillGradientFrom,
+                    gradientTo: specScheme.fillGradientTo,
+                    strokeWidth: 1.5,
+                  },
+                ]}
+                showXAxis={false}
+                showYAxis={false}
+                showGrid={false}
+                showTooltip={false}
+                compact={true}
               />
             </div>
           ) : settings.gaugeStyle === "gauge" && value.percent !== undefined ? (

@@ -20,7 +20,7 @@ export type CompactLayoutMode = z.infer<typeof CompactLayoutModeSchema>;
 export const CompactDisplayDensitySchema = z.enum(['ultra-compact', 'compact', 'detailed']);
 export type CompactDisplayDensity = z.infer<typeof CompactDisplayDensitySchema>;
 
-export const CompactVisualGaugeSchema = z.enum(['bar', 'sparkline', 'gauge', 'minimal']);
+export const CompactVisualGaugeSchema = z.enum(['bar', 'sparkline', 'gauge', 'chart', 'minimal']);
 export type CompactVisualGauge = z.infer<typeof CompactVisualGaugeSchema>;
 
 export const CompactAccentColorSchema = z.enum([

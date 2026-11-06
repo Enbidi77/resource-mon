@@ -53,6 +53,7 @@ export const CompactCustomizer: React.FC<CompactCustomizerProps> = ({ onClose })
   const gaugeOptions: Array<{ id: CompactVisualGauge; label: string }> = [
     { id: "bar", label: "Progress Bar" },
     { id: "sparkline", label: "SVG Trend" },
+    { id: "chart", label: "Area Chart" },
     { id: "gauge", label: "Circular Dial" },
     { id: "minimal", label: "Numeric Only" },
   ];
