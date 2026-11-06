@@ -128,7 +128,7 @@ export const App: React.FC = () => {
 
   if (isStandaloneCompact) {
     return (
-      <div className="h-screen w-screen p-1 bg-transparent overflow-hidden select-none">
+      <div className="h-screen w-screen bg-transparent overflow-hidden select-none">
         <CompactHUD standalone={true} />
       </div>
     );
@@ -139,7 +139,7 @@ export const App: React.FC = () => {
       className={`h-screen w-screen flex flex-col bg-glass-canvas text-text-primary overflow-hidden font-sans relative selection:bg-cyan-500/30 selection:text-cyan-800 dark:selection:text-cyan-200 ${
         isMaximized
           ? "rounded-none border-none"
-          : "rounded-[20px] border border-black/10 dark:border-white/15 shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
+          : "rounded-[20px] border border-black/10 dark:border-white/15 shadow-[var(--glass-specular)]"
       }`}
     >
       {/* Liquid Glass Vibrant Ambient Mesh Gradient (Rich Contrast Refraction Backplane) */}

@@ -195,3 +195,4 @@ export function registerIpcHandlers({
     return coreService.generateReport(config);
   });
 }
+

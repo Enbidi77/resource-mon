@@ -130,11 +130,13 @@ export const CompactHUD: React.FC<CompactHUDProps> = ({
       style={{
         opacity: settings.opacity / 100,
       }}
-      className={`h-full w-full flex flex-col bg-glass-canvas backdrop-blur-3xl rounded-2xl border border-black/10 dark:border-white/15 shadow-2xl text-slate-800 dark:text-white select-none overflow-hidden relative ${className}`}
+      className={`h-full w-full flex flex-col bg-glass-canvas backdrop-blur-3xl rounded-2xl border border-black/10 dark:border-white/15 ${
+        standalone ? "shadow-[var(--glass-specular)]" : "shadow-2xl"
+      } text-slate-800 dark:text-white select-none overflow-hidden relative ${className}`}
     >
       {/* Liquid Glass Vibrant Ambient Mesh Gradient (Exact match with Sentinel Desktop) */}
       <div
-        className="absolute inset-0 pointer-events-none overflow-hidden z-0 rounded-2xl"
+        className="absolute inset-0 pointer-events-none overflow-hidden z-0"
         aria-hidden="true"
       >
         {/* Dark cosmic gradient base mesh (Active only in dark mode) */}
@@ -161,7 +163,7 @@ export const CompactHUD: React.FC<CompactHUDProps> = ({
 
       {/* Floating Mini Draggable TitleBar */}
       {settings.showTitleBar && (
-        <header className="titlebar-drag-region h-9 shrink-0 flex items-center justify-between px-3 border-b border-black/[0.08] dark:border-white/10 bg-white/70 dark:bg-black/25 backdrop-blur-2xl z-20">
+        <header className="titlebar-drag-region h-9 shrink-0 flex items-center justify-between px-3 border-b border-black/[0.08] dark:border-white/10 bg-white/70 dark:bg-black/25 backdrop-blur-2xl rounded-t-2xl z-20">
           {/* Left: Branding & Status Dot */}
           <div className="flex items-center gap-2 no-drag">
             <span

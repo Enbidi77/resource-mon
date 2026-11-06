@@ -52,6 +52,7 @@ export class WindowManager {
       show: false,
       frame: false, // Frameless custom glass workstation titlebar
       transparent: true,
+      hasShadow: false,
       backgroundColor: "#00000000", // Transparent base for authentic glass blur
       vibrancy: process.platform === "darwin" ? "under-window" : undefined,
       // Note: Do NOT set backgroundMaterial: "acrylic" on Windows with transparent: true & custom CSS rounded corners.
@@ -123,6 +124,7 @@ export class WindowManager {
       show: false,
       frame: false,
       transparent: true,
+      hasShadow: false,
       backgroundColor: "#00000000",
       alwaysOnTop: true,
       skipTaskbar: false,
@@ -298,3 +300,4 @@ export class WindowManager {
     }
   }
 }
+
