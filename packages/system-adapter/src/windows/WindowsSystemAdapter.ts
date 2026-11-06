@@ -48,6 +48,11 @@ export class WindowsSystemAdapter
   private lastNetFetchTime = 0;
   private isFetchingNet = false;
 
+  private cachedProcessesCount = 0;
+  private cachedSocketsCount = 0;
+  private lastProcFetchTime = 0;
+  private isFetchingProcCounts = false;
+
   private calculateCoreLoads(): { coreIndex: number; loadPercent: number }[] {
     const cpus = os.cpus();
     if (!cpus || cpus.length === 0) {
@@ -132,6 +137,34 @@ export class WindowsSystemAdapter
       .catch(() => {})
       .finally(() => {
         this.isFetchingNet = false;
+      });
+  }
+
+  private updateProcessCountsInBackground(): void {
+    const now = Date.now();
+    if (
+      this.isFetchingProcCounts ||
+      (this.cachedProcessesCount > 0 && now - this.lastProcFetchTime < 2500)
+    ) {
+      return;
+    }
+    this.isFetchingProcCounts = true;
+    Promise.all([
+      si.processes().catch(() => null),
+      si.networkConnections().catch(() => null),
+    ])
+      .then(([procs, conns]) => {
+        if (procs) {
+          this.cachedProcessesCount = procs.all || procs.list?.length || 0;
+        }
+        if (conns && Array.isArray(conns)) {
+          this.cachedSocketsCount = conns.length;
+        }
+        this.lastProcFetchTime = Date.now();
+      })
+      .catch(() => {})
+      .finally(() => {
+        this.isFetchingProcCounts = false;
       });
   }
 
@@ -222,6 +255,7 @@ export class WindowsSystemAdapter
     // Trigger non-blocking background telemetry updates
     this.updateGpuMetricsInBackground();
     this.updateNetworkStatsInBackground();
+    this.updateProcessCountsInBackground();
 
     // Parallel ultra-fast Win32 C FFI queries (< 1ms total)
     const [nativeMem, nativeCpu, diskIo] = await Promise.all([
@@ -274,8 +308,8 @@ export class WindowsSystemAdapter
       diskWriteBytesPerSec: diskWrite,
       networkDownloadBytesPerSec: netRx,
       networkUploadBytesPerSec: netTx,
-      activeProcessesCount: 0,
-      activeSocketsCount: 0,
+      activeProcessesCount: this.cachedProcessesCount,
+      activeSocketsCount: this.cachedSocketsCount,
       systemIntegrityScore: Math.max(20, integrity),
     };
   }

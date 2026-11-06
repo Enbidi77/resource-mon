@@ -17,7 +17,8 @@ export type AppPage =
   | "security"
   | "events"
   | "reports"
-  | "settings";
+  | "settings"
+  | "compact";
 
 export type AppTheme = "dark" | "light";
 
@@ -42,6 +43,7 @@ interface AppState {
 
   setCurrentPage: (page: AppPage) => void;
   setTheme: (theme: AppTheme) => void;
+  setThemeFromRemote: (theme: AppTheme) => void;
   toggleTheme: () => void;
   setIsMaximized: (max: boolean) => void;
   setOverview: (overview: SystemOverview) => void;
@@ -55,6 +57,16 @@ interface AppState {
   removeToast: (id: string) => void;
 }
 
+const getInitialTheme = (): AppTheme => {
+  if (typeof window !== "undefined" && window.localStorage) {
+    const saved = window.localStorage.getItem("sentinel_theme");
+    if (saved === "light" || saved === "dark") {
+      return saved;
+    }
+  }
+  return "dark";
+};
+
 const applyTheme = (theme: AppTheme) => {
   if (typeof document !== "undefined") {
     document.documentElement.classList.remove("light", "dark");
@@ -63,9 +75,12 @@ const applyTheme = (theme: AppTheme) => {
   }
 };
 
-export const useAppStore = create<AppState>((set) => ({
+const initialTheme = getInitialTheme();
+applyTheme(initialTheme);
+
+export const useAppStore = create<AppState>((set, get) => ({
   currentPage: "overview",
-  theme: "dark",
+  theme: initialTheme,
   isMaximized: false,
   overview: null,
   selectedProcess: null,
@@ -78,15 +93,27 @@ export const useAppStore = create<AppState>((set) => ({
 
   setCurrentPage: (page) => set({ currentPage: page }),
   setTheme: (theme) => {
+    if (get().theme === theme) return;
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.setItem("sentinel_theme", theme);
+    }
     applyTheme(theme);
     set({ theme });
+    window.sentinelAPI?.setTheme(theme);
   },
-  toggleTheme: () =>
-    set((state) => {
-      const nextTheme: AppTheme = state.theme === "dark" ? "light" : "dark";
-      applyTheme(nextTheme);
-      return { theme: nextTheme };
-    }),
+  setThemeFromRemote: (theme) => {
+    if (get().theme === theme) return;
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.setItem("sentinel_theme", theme);
+    }
+    applyTheme(theme);
+    set({ theme });
+    // Intentionally omit window.sentinelAPI.setTheme to prevent echo back loop
+  },
+  toggleTheme: () => {
+    const nextTheme: AppTheme = get().theme === "dark" ? "light" : "dark";
+    get().setTheme(nextTheme);
+  },
   setIsMaximized: (isMaximized) => set({ isMaximized }),
   setOverview: (overview) => set({ overview }),
   setSelectedProcess: (proc) =>

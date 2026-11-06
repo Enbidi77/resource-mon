@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, session, nativeImage } from "electron";
+import { app, BrowserWindow, ipcMain, shell, session, nativeImage, nativeTheme } from "electron";
 import { join } from "path";
 import { existsSync } from "fs";
 import { SentinelCoreService } from "@sentinel/core";
@@ -30,7 +30,9 @@ process.on("unhandledRejection", (reason) => {
 });
 
 let mainWindow: BrowserWindow | null = null;
+let compactWindow: BrowserWindow | null = null;
 let coreService: SentinelCoreService | null = null;
+let currentTheme: "dark" | "light" = "dark";
 
 function resolveAppIconPath(): string | undefined {
   const icoCandidates = [
@@ -116,30 +118,178 @@ function createWindow(): void {
   }
 }
 
+function createCompactWindow(): BrowserWindow {
+  if (compactWindow && !compactWindow.isDestroyed()) {
+    compactWindow.show();
+    compactWindow.focus();
+    return compactWindow;
+  }
+
+  const iconPath = resolveAppIconPath();
+  const iconImage = iconPath ? nativeImage.createFromPath(iconPath) : undefined;
+
+  compactWindow = new BrowserWindow({
+    width: 380,
+    height: 540,
+    minWidth: 260,
+    minHeight: 140,
+    maxWidth: 960,
+    maxHeight: 1200,
+    show: false,
+    frame: false,
+    transparent: true,
+    backgroundColor: "#00000000",
+    alwaysOnTop: true,
+    skipTaskbar: false,
+    resizable: true,
+    title: "Sentinel Compact HUD",
+    icon: iconPath || iconImage,
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: join(__dirname, "../preload/index.js"),
+      sandbox: false,
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  if (iconPath) {
+    try {
+      compactWindow.setIcon(iconPath);
+    } catch (e) {
+      defaultLogger.warn({ err: e }, "Failed to explicitly set compact window icon");
+    }
+  }
+
+  compactWindow.on("ready-to-show", () => {
+    compactWindow?.show();
+    compactWindow?.setAlwaysOnTop(true, "screen-saver");
+    compactWindow?.webContents.send(IPC_CHANNELS.THEME_STREAM, currentTheme);
+  });
+
+  compactWindow.on("closed", () => {
+    compactWindow = null;
+  });
+
+  compactWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url);
+    return { action: "deny" };
+  });
+
+  if (process.env["ELECTRON_RENDERER_URL"]) {
+    compactWindow.loadURL(`${process.env["ELECTRON_RENDERER_URL"]}#compact`);
+  } else {
+    compactWindow.loadFile(join(__dirname, "../renderer/index.html"), {
+      hash: "compact",
+    });
+  }
+
+  return compactWindow;
+}
+
 function setupIpcHandlers(): void {
   coreService = new SentinelCoreService();
 
-  // Window Controls
-  ipcMain.handle(IPC_CHANNELS.WINDOW_MINIMIZE, () => {
-    mainWindow?.minimize();
+  // Window Controls (resolves caller window so compact or main window can be controlled)
+  ipcMain.handle(IPC_CHANNELS.WINDOW_MINIMIZE, (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    win?.minimize();
   });
 
-  ipcMain.handle(IPC_CHANNELS.WINDOW_MAXIMIZE, () => {
-    if (mainWindow?.isMaximized()) {
-      mainWindow.unmaximize();
+  ipcMain.handle(IPC_CHANNELS.WINDOW_MAXIMIZE, (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    if (win?.isMaximized()) {
+      win.unmaximize();
       return false;
     } else {
-      mainWindow?.maximize();
+      win?.maximize();
       return true;
     }
   });
 
-  ipcMain.handle(IPC_CHANNELS.WINDOW_CLOSE, () => {
-    mainWindow?.close();
+  ipcMain.handle(IPC_CHANNELS.WINDOW_CLOSE, (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    win?.close();
   });
 
-  ipcMain.handle(IPC_CHANNELS.WINDOW_IS_MAXIMIZED, () => {
-    return mainWindow?.isMaximized() || false;
+  ipcMain.handle(IPC_CHANNELS.WINDOW_IS_MAXIMIZED, (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    return win?.isMaximized() || false;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WINDOW_RESTORE_MAIN, () => {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      createWindow();
+    } else {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+
+  // Compact HUD Always-On-Top Window Controls
+  ipcMain.handle(IPC_CHANNELS.COMPACT_WINDOW_OPEN, () => {
+    createCompactWindow();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.COMPACT_WINDOW_CLOSE, () => {
+    if (compactWindow && !compactWindow.isDestroyed()) {
+      compactWindow.close();
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.COMPACT_WINDOW_TOGGLE, () => {
+    if (compactWindow && !compactWindow.isDestroyed()) {
+      compactWindow.close();
+      return false;
+    } else {
+      createCompactWindow();
+      return true;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.COMPACT_WINDOW_IS_OPEN, () => {
+    return Boolean(compactWindow && !compactWindow.isDestroyed() && compactWindow.isVisible());
+  });
+
+  ipcMain.handle(IPC_CHANNELS.COMPACT_WINDOW_SET_ALWAYS_ON_TOP, (_e, alwaysOnTop: boolean) => {
+    if (compactWindow && !compactWindow.isDestroyed()) {
+      compactWindow.setAlwaysOnTop(alwaysOnTop, alwaysOnTop ? "screen-saver" : "normal");
+      return alwaysOnTop;
+    }
+    return false;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.COMPACT_WINDOW_GET_ALWAYS_ON_TOP, () => {
+    if (compactWindow && !compactWindow.isDestroyed()) {
+      return compactWindow.isAlwaysOnTop();
+    }
+    return false;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.COMPACT_WINDOW_SET_CLICK_THROUGH, (_e, clickThrough: boolean) => {
+    if (compactWindow && !compactWindow.isDestroyed()) {
+      compactWindow.setIgnoreMouseEvents(clickThrough, { forward: true });
+    }
+  });
+
+  // Theme Synchronization Across Windows
+  ipcMain.handle(IPC_CHANNELS.THEME_GET, () => {
+    return currentTheme;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.THEME_SET, (event, theme: "dark" | "light") => {
+    if (theme !== "dark" && theme !== "light") return;
+    currentTheme = theme;
+    if (nativeTheme.themeSource !== theme) {
+      nativeTheme.themeSource = theme;
+    }
+    const senderWebContents = event.sender;
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed() && win.webContents !== senderWebContents) {
+        win.webContents.send(IPC_CHANNELS.THEME_STREAM, theme);
+      }
+    }
   });
 
   // System
@@ -158,10 +308,13 @@ function setupIpcHandlers(): void {
     },
   );
 
-  // Stream live metrics updates to the renderer
+  // Stream live metrics updates to all active workstation windows
   coreService.onSystemMetrics((snapshot) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send(IPC_CHANNELS.SYSTEM_STREAM_METRICS, snapshot);
+    }
+    if (compactWindow && !compactWindow.isDestroyed()) {
+      compactWindow.webContents.send(IPC_CHANNELS.SYSTEM_STREAM_METRICS, snapshot);
     }
   });
 

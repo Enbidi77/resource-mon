@@ -7,6 +7,7 @@ import {
   X,
   Sun,
   Moon,
+  PictureInPicture2,
 } from "lucide-react";
 import appIcon from "../../../assets/icon.png";
 import { useAppStore } from "../../stores/useAppStore";
@@ -88,6 +89,15 @@ export const TitleBar: React.FC = () => {
 
       {/* Right: Theme Toggle & Window Controls */}
       <div className="flex items-center gap-2 no-drag">
+        {/* Always-on-top Compact HUD Button */}
+        <button
+          onClick={() => window.sentinelAPI?.toggleCompactWindow()}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 dark:text-white/60 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-black/[0.05] dark:hover:bg-white/10 border border-transparent hover:border-black/[0.08] dark:hover:border-white/10 transition-all cursor-pointer"
+          title="Toggle Always-On-Top Compact HUD"
+        >
+          <PictureInPicture2 className="w-3.5 h-3.5" />
+        </button>
+
         {/* Light / Dark Mode Liquid Glass Toggle */}
         <button
           onClick={toggleTheme}

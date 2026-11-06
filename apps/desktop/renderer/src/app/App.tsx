@@ -19,6 +19,8 @@ import { SecurityPage } from "../pages/SecurityPage";
 import { EventsPage } from "../pages/EventsPage";
 import { ReportsPage } from "../pages/ReportsPage";
 import { SettingsPage } from "../pages/SettingsPage";
+import { CompactPage } from "../pages/CompactPage";
+import { CompactHUD } from "../components/compact/CompactHUD";
 
 export const App: React.FC = () => {
   const {
@@ -40,6 +42,27 @@ export const App: React.FC = () => {
       document.documentElement.setAttribute("data-theme", theme);
     }
   }, [theme]);
+
+  useEffect(() => {
+    // Synchronize theme across windows via Electron IPC
+    if (window.sentinelAPI?.getTheme) {
+      window.sentinelAPI.getTheme().then((mainTheme) => {
+        if (mainTheme && mainTheme !== useAppStore.getState().theme) {
+          useAppStore.getState().setThemeFromRemote(mainTheme);
+        }
+      });
+    }
+
+    const unsubTheme = window.sentinelAPI?.onThemeChanged
+      ? window.sentinelAPI.onThemeChanged((nextTheme) => {
+          useAppStore.getState().setThemeFromRemote(nextTheme);
+        })
+      : undefined;
+
+    return () => {
+      unsubTheme?.();
+    };
+  }, []);
 
   useEffect(() => {
     // 1. Fetch static system overview
@@ -91,14 +114,29 @@ export const App: React.FC = () => {
         return <ReportsPage />;
       case "settings":
         return <SettingsPage />;
+      case "compact":
+        return <CompactPage />;
       default:
         return <DashboardPage />;
     }
   };
 
+  const isStandaloneCompact =
+    typeof window !== "undefined" &&
+    (window.location.hash.includes("compact") ||
+      window.location.search.includes("compact"));
+
+  if (isStandaloneCompact) {
+    return (
+      <div className="h-screen w-screen p-1 bg-transparent overflow-hidden select-none">
+        <CompactHUD standalone={true} />
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`h-screen w-screen flex flex-col bg-glass-canvas text-text-primary overflow-hidden font-sans relative selection:bg-cyan-500/30 selection:text-cyan-800 dark:selection:text-cyan-200 transition-all duration-150 ${
+      className={`h-screen w-screen flex flex-col bg-glass-canvas text-text-primary overflow-hidden font-sans relative selection:bg-cyan-500/30 selection:text-cyan-800 dark:selection:text-cyan-200 ${
         isMaximized
           ? "rounded-none border-none"
           : "rounded-[20px] border border-black/10 dark:border-white/15 shadow-2xl ring-1 ring-black/5 dark:ring-white/10"

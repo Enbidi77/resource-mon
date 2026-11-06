@@ -69,6 +69,21 @@ export const IPC_CHANNELS = {
   WINDOW_MAXIMIZE: "sentinel:window:maximize",
   WINDOW_CLOSE: "sentinel:window:close",
   WINDOW_IS_MAXIMIZED: "sentinel:window:is-maximized",
+  WINDOW_RESTORE_MAIN: "sentinel:window:restore-main",
+
+  // Compact HUD / Always-On-Top Window Controls
+  COMPACT_WINDOW_OPEN: "sentinel:compact:open",
+  COMPACT_WINDOW_CLOSE: "sentinel:compact:close",
+  COMPACT_WINDOW_TOGGLE: "sentinel:compact:toggle",
+  COMPACT_WINDOW_IS_OPEN: "sentinel:compact:is-open",
+  COMPACT_WINDOW_SET_ALWAYS_ON_TOP: "sentinel:compact:set-always-on-top",
+  COMPACT_WINDOW_GET_ALWAYS_ON_TOP: "sentinel:compact:get-always-on-top",
+  COMPACT_WINDOW_SET_CLICK_THROUGH: "sentinel:compact:set-click-through",
+
+  // Theme Synchronization Across Windows
+  THEME_GET: "sentinel:theme:get",
+  THEME_SET: "sentinel:theme:set",
+  THEME_STREAM: "sentinel:theme:stream",
 } as const;
 
 export type IpcChannelName = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
@@ -83,6 +98,7 @@ export interface ISentinelAPI {
   maximizeWindow: () => Promise<boolean>;
   closeWindow: () => Promise<void>;
   isWindowMaximized: () => Promise<boolean>;
+  restoreMainWindow: () => Promise<void>;
 
   // System
   getSystemOverview: () => Promise<SystemOverview>;
@@ -137,4 +153,20 @@ export interface ISentinelAPI {
 
   // Reports
   generateReport: (config: ReportConfig) => Promise<GeneratedReport>;
+
+  // Compact HUD Always-On-Top Window
+  openCompactWindow: () => Promise<void>;
+  closeCompactWindow: () => Promise<void>;
+  toggleCompactWindow: () => Promise<boolean>;
+  isCompactWindowOpen: () => Promise<boolean>;
+  setCompactAlwaysOnTop: (alwaysOnTop: boolean) => Promise<boolean>;
+  isCompactAlwaysOnTop: () => Promise<boolean>;
+  setCompactClickThrough: (clickThrough: boolean) => Promise<void>;
+
+  // Theme synchronization across windows
+  getTheme: () => Promise<"dark" | "light">;
+  setTheme: (theme: "dark" | "light") => Promise<void>;
+  onThemeChanged: (
+    callback: (theme: "dark" | "light") => void,
+  ) => (() => void) & Disposable;
 }

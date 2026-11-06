@@ -15,6 +15,7 @@ const api: ISentinelAPI = {
   maximizeWindow: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_MAXIMIZE),
   closeWindow: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_CLOSE),
   isWindowMaximized: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_IS_MAXIMIZED),
+  restoreMainWindow: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_RESTORE_MAIN),
 
   // System
   getSystemOverview: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_OVERVIEW),
@@ -83,6 +84,36 @@ const api: ISentinelAPI = {
   // Reports
   generateReport: (config: ReportConfig) =>
     ipcRenderer.invoke(IPC_CHANNELS.REPORTS_GENERATE, config),
+
+  // Compact HUD Always-On-Top Window
+  openCompactWindow: () => ipcRenderer.invoke(IPC_CHANNELS.COMPACT_WINDOW_OPEN),
+  closeCompactWindow: () => ipcRenderer.invoke(IPC_CHANNELS.COMPACT_WINDOW_CLOSE),
+  toggleCompactWindow: () => ipcRenderer.invoke(IPC_CHANNELS.COMPACT_WINDOW_TOGGLE),
+  isCompactWindowOpen: () => ipcRenderer.invoke(IPC_CHANNELS.COMPACT_WINDOW_IS_OPEN),
+  setCompactAlwaysOnTop: (alwaysOnTop: boolean) =>
+    ipcRenderer.invoke(IPC_CHANNELS.COMPACT_WINDOW_SET_ALWAYS_ON_TOP, alwaysOnTop),
+  isCompactAlwaysOnTop: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.COMPACT_WINDOW_GET_ALWAYS_ON_TOP),
+  setCompactClickThrough: (clickThrough: boolean) =>
+    ipcRenderer.invoke(IPC_CHANNELS.COMPACT_WINDOW_SET_CLICK_THROUGH, clickThrough),
+
+  // Theme synchronization across windows
+  getTheme: () => ipcRenderer.invoke(IPC_CHANNELS.THEME_GET),
+  setTheme: (theme: "dark" | "light") =>
+    ipcRenderer.invoke(IPC_CHANNELS.THEME_SET, theme),
+  onThemeChanged: (callback: (theme: "dark" | "light") => void) => {
+    const subscription = (_event: any, theme: "dark" | "light") =>
+      callback(theme);
+    ipcRenderer.on(IPC_CHANNELS.THEME_STREAM, subscription);
+    let isDisposed = false;
+    const unsub = () => {
+      if (isDisposed) return;
+      isDisposed = true;
+      ipcRenderer.removeListener(IPC_CHANNELS.THEME_STREAM, subscription);
+    };
+    (unsub as any)[Symbol.dispose] = unsub;
+    return unsub as (() => void) & Disposable;
+  },
 };
 
 contextBridge.exposeInMainWorld("sentinelAPI", api);

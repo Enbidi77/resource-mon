@@ -12,6 +12,7 @@ import {
   FileText,
   FileDown,
   Settings,
+  Pin,
 } from "lucide-react";
 import { useAppStore, AppPage } from "../../stores/useAppStore";
 
@@ -46,6 +47,13 @@ const NAV_ITEMS: NavItem[] = [
   },
   { id: "events", label: "Event Viewer", icon: FileText },
   { id: "reports", label: "Reports", icon: FileDown },
+  {
+    id: "compact",
+    label: "Compact HUD",
+    icon: Pin,
+    badge: "AOT",
+    badgeVariant: "cyan",
+  },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 

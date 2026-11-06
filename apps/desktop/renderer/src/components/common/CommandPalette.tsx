@@ -13,6 +13,7 @@ import {
   FileText,
   FileDown,
   Settings,
+  Pin,
   X,
 } from 'lucide-react';
 import { useAppStore, AppPage } from '../../stores/useAppStore';
@@ -48,6 +49,7 @@ export const CommandPalette: React.FC = () => {
     { label: 'Host Security Center & FIM', page: 'security' as AppPage, icon: ShieldAlert },
     { label: 'Windows Event Viewer', page: 'events' as AppPage, icon: FileText },
     { label: 'Generate System Audit Report', page: 'reports' as AppPage, icon: FileDown },
+    { label: 'Always-On-Top Compact HUD & Specs', page: 'compact' as AppPage, icon: Pin },
     { label: 'Workstation Settings', page: 'settings' as AppPage, icon: Settings },
   ];
 

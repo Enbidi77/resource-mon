@@ -6,5 +6,5 @@ export * from './services/index.js';
 export * from './events/index.js';
 export * from './hardware/index.js';
 export * from './reports/index.js';
+export * from './compact/index.js';
 export * from './ipc/index.js';
-
