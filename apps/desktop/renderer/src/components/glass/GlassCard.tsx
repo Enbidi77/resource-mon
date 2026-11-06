@@ -6,7 +6,9 @@ export type GlassCardVariant = "default" | "elevated" | "subtle" | "solid";
 export type GlassCardGlow =
   "cyan" | "emerald" | "purple" | "blue" | "amber" | "rose" | "none";
 
-export interface GlassCardProps extends Omit<HTMLMotionProps<"div">, "title"> {
+export interface GlassCardProps
+  extends Omit<HTMLMotionProps<"div">, "title" | "children"> {
+  children?: React.ReactNode;
   variant?: GlassCardVariant;
   hoverEffect?: "lift" | "glow" | "scale" | "none";
   glowColor?: GlassCardGlow;

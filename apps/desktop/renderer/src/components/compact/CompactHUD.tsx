@@ -18,6 +18,7 @@ import { CompactSpecCard } from "./CompactSpecCard";
 import { CompactSpecPill } from "./CompactSpecPill";
 import { CompactCustomizer } from "./CompactCustomizer";
 import type { SpecRenderContext } from "./types";
+import type { CompactSpecId, CompactSpecItemConfig } from "@sentinel/contracts";
 import { ACCENT_SCHEMES } from "./visuals/CompactThemeHelper";
 
 interface CompactHUDProps {
@@ -90,10 +91,20 @@ export const CompactHUD: React.FC<CompactHUDProps> = ({
       overview,
       history,
       settings,
-      config: { enabled: true, order: 0 },
     }),
     [current, overview, history, settings]
   );
+
+  const getSpecConfig = (specId: CompactSpecId): CompactSpecItemConfig => {
+    return (
+      settings.specs[specId] ?? {
+        enabled: true,
+        order: 0,
+        showSparkline: false,
+        showDetails: true,
+      }
+    );
+  };
 
   const accent = ACCENT_SCHEMES[settings.accentColor];
 
@@ -260,7 +271,7 @@ export const CompactHUD: React.FC<CompactHUDProps> = ({
                 <CompactSpecPill
                   key={spec.id}
                   spec={spec}
-                  context={{ ...context, config: settings.specs[spec.id] }}
+                  context={{ ...context, config: getSpecConfig(spec.id) }}
                 />
               ))}
             </div>
@@ -270,7 +281,7 @@ export const CompactHUD: React.FC<CompactHUDProps> = ({
                 <CompactSpecPill
                   key={spec.id}
                   spec={spec}
-                  context={{ ...context, config: settings.specs[spec.id] }}
+                  context={{ ...context, config: getSpecConfig(spec.id) }}
                 />
               ))}
             </div>
@@ -280,7 +291,7 @@ export const CompactHUD: React.FC<CompactHUDProps> = ({
                 <CompactSpecPill
                   key={spec.id}
                   spec={spec}
-                  context={{ ...context, config: settings.specs[spec.id] }}
+                  context={{ ...context, config: getSpecConfig(spec.id) }}
                 />
               ))}
             </div>
@@ -293,7 +304,7 @@ export const CompactHUD: React.FC<CompactHUDProps> = ({
                 <div key={spec.id} className="min-w-[140px] shrink-0">
                   <CompactSpecCard
                     spec={spec}
-                    context={{ ...context, config: settings.specs[spec.id] }}
+                    context={{ ...context, config: getSpecConfig(spec.id) }}
                   />
                 </div>
               ))}
@@ -304,7 +315,7 @@ export const CompactHUD: React.FC<CompactHUDProps> = ({
                 <CompactSpecCard
                   key={spec.id}
                   spec={spec}
-                  context={{ ...context, config: settings.specs[spec.id] }}
+                  context={{ ...context, config: getSpecConfig(spec.id) }}
                 />
               ))}
             </div>
@@ -314,7 +325,7 @@ export const CompactHUD: React.FC<CompactHUDProps> = ({
                 <CompactSpecCard
                   key={spec.id}
                   spec={spec}
-                  context={{ ...context, config: settings.specs[spec.id] }}
+                  context={{ ...context, config: getSpecConfig(spec.id) }}
                 />
               ))}
             </div>

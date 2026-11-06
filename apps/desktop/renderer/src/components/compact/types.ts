@@ -23,7 +23,7 @@ export interface SpecRenderContext {
   overview: SystemOverview | null;
   history: MetricHistoryPoint[];
   settings: CompactSettings;
-  config: CompactSpecItemConfig;
+  config?: CompactSpecItemConfig;
 }
 
 export type SpecStatus = "optimal" | "warning" | "danger" | "info" | "neutral";
@@ -42,8 +42,8 @@ export interface SpecDefinition {
   label: string;
   shortLabel: string;
   description: string;
-  category: "compute" | "storage" | "network" | "security" | "system";
+  category:
+    "compute" | "storage" | "network" | "security" | "system" | "memory";
   icon: React.ComponentType<{ className?: string }>;
   extract: (context: SpecRenderContext) => SpecValue;
 }
-
