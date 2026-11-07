@@ -2,7 +2,11 @@ import React, { useEffect, useState } from "react";
 import { Cpu, Zap, Monitor, Layers } from "lucide-react";
 import type { HardwareSummary } from "@sentinel/contracts";
 import { formatBytes } from "@sentinel/shared";
-import { GlassCard, GlassSurface } from "../components/glass";
+import {
+  GlassCard,
+  GlassSurface,
+  PageLoadingSkeleton,
+} from "../components/glass";
 
 export const HardwarePage: React.FC = () => {
   const [hardware, setHardware] = useState<HardwareSummary | null>(null);
@@ -18,11 +22,7 @@ export const HardwarePage: React.FC = () => {
   }, []);
 
   if (loading || !hardware) {
-    return (
-      <div className="p-8 text-center text-xs text-text-tertiary font-mono">
-        Querying hardware bus, BIOS, and ACPI tables...
-      </div>
-    );
+    return <PageLoadingSkeleton page="hardware" />;
   }
 
   return (

@@ -57,6 +57,21 @@ const NAV_ITEMS: NavItem[] = [
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
+const PAGE_PREFETCHERS: Partial<Record<AppPage, () => Promise<unknown>>> = {
+  overview: () => import("../../pages/DashboardPage"),
+  performance: () => import("../../pages/PerformancePage"),
+  processes: () => import("../../pages/ProcessesPage"),
+  hardware: () => import("../../pages/HardwarePage"),
+  network: () => import("../../pages/NetworkPage"),
+  services: () => import("../../pages/ServicesPage"),
+  storage: () => import("../../pages/StoragePage"),
+  security: () => import("../../pages/SecurityPage"),
+  events: () => import("../../pages/EventsPage"),
+  reports: () => import("../../pages/ReportsPage"),
+  settings: () => import("../../pages/SettingsPage"),
+  compact: () => import("../../pages/CompactPage"),
+};
+
 export const Sidebar: React.FC = () => {
   const { currentPage, setCurrentPage } = useAppStore();
 
@@ -76,6 +91,9 @@ export const Sidebar: React.FC = () => {
               <button
                 key={item.id}
                 onClick={() => setCurrentPage(item.id)}
+                onMouseEnter={() => {
+                  PAGE_PREFETCHERS[item.id]?.();
+                }}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-mono transition-all duration-150 group relative cursor-pointer ${
                   isActive
                     ? "text-cyan-900 dark:text-white font-semibold"

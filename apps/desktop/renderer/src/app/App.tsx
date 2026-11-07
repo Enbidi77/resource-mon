@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import React, { useEffect, Suspense, lazy } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useAppStore, AppPage } from "../stores/useAppStore";
 import { useMetricsStore } from "../stores/useMetricsStore";
 import { TitleBar } from "../components/layout/TitleBar";
@@ -6,21 +7,49 @@ import { Sidebar } from "../components/layout/Sidebar";
 import { StatusBar } from "../components/layout/StatusBar";
 import { RightDrawer } from "../components/layout/RightDrawer";
 import { CommandPalette } from "../components/common/CommandPalette";
-import { GlassSurface } from "../components/glass";
-
-import { DashboardPage } from "../pages/DashboardPage";
-import { PerformancePage } from "../pages/PerformancePage";
-import { ProcessesPage } from "../pages/ProcessesPage";
-import { HardwarePage } from "../pages/HardwarePage";
-import { NetworkPage } from "../pages/NetworkPage";
-import { ServicesPage } from "../pages/ServicesPage";
-import { StoragePage } from "../pages/StoragePage";
-import { SecurityPage } from "../pages/SecurityPage";
-import { EventsPage } from "../pages/EventsPage";
-import { ReportsPage } from "../pages/ReportsPage";
-import { SettingsPage } from "../pages/SettingsPage";
-import { CompactPage } from "../pages/CompactPage";
+import { GlassSurface, PageLoadingSkeleton } from "../components/glass";
+import { ErrorBoundary } from "../components/common/ErrorBoundary";
 import { CompactHUD } from "../components/compact/CompactHUD";
+
+// Lazy-loaded workstation page modules for fast zero-lag code splitting
+const DashboardPage = lazy(() =>
+  import("../pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
+);
+const PerformancePage = lazy(() =>
+  import("../pages/PerformancePage").then((m) => ({
+    default: m.PerformancePage,
+  })),
+);
+const ProcessesPage = lazy(() =>
+  import("../pages/ProcessesPage").then((m) => ({ default: m.ProcessesPage })),
+);
+const HardwarePage = lazy(() =>
+  import("../pages/HardwarePage").then((m) => ({ default: m.HardwarePage })),
+);
+const NetworkPage = lazy(() =>
+  import("../pages/NetworkPage").then((m) => ({ default: m.NetworkPage })),
+);
+const ServicesPage = lazy(() =>
+  import("../pages/ServicesPage").then((m) => ({ default: m.ServicesPage })),
+);
+const StoragePage = lazy(() =>
+  import("../pages/StoragePage").then((m) => ({ default: m.StoragePage })),
+);
+const SecurityPage = lazy(() =>
+  import("../pages/SecurityPage").then((m) => ({ default: m.SecurityPage })),
+);
+const EventsPage = lazy(() =>
+  import("../pages/EventsPage").then((m) => ({ default: m.EventsPage })),
+);
+const ReportsPage = lazy(() =>
+  import("../pages/ReportsPage").then((m) => ({ default: m.ReportsPage })),
+);
+const SettingsPage = lazy(() =>
+  import("../pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+);
+const CompactPage = lazy(() =>
+  import("../pages/CompactPage").then((m) => ({ default: m.CompactPage })),
+);
 
 export const App: React.FC = () => {
   const {
@@ -99,6 +128,41 @@ export const App: React.FC = () => {
       };
     }
   }, [setOverview, setCurrentMetrics, setIsMaximized]);
+
+  useEffect(() => {
+    // Prefetch non-active page chunks in background during idle time
+    const prefetchModules = () => {
+      import("../pages/PerformancePage");
+      import("../pages/ProcessesPage");
+      import("../pages/HardwarePage");
+      import("../pages/NetworkPage");
+      import("../pages/ServicesPage");
+      import("../pages/StoragePage");
+      import("../pages/SecurityPage");
+      import("../pages/EventsPage");
+      import("../pages/ReportsPage");
+      import("../pages/SettingsPage");
+    };
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      const handle = (
+        window as unknown as {
+          requestIdleCallback: (
+            cb: () => void,
+            opts?: { timeout: number },
+          ) => number;
+        }
+      ).requestIdleCallback(prefetchModules, { timeout: 3000 });
+      return () => {
+        (
+          window as unknown as { cancelIdleCallback?: (id: number) => void }
+        ).cancelIdleCallback?.(handle);
+      };
+    } else {
+      const timer = setTimeout(prefetchModules, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const renderPage = (page: AppPage) => {
     switch (page) {
@@ -199,7 +263,22 @@ export const App: React.FC = () => {
 
         {/* Dynamic Module Content View */}
         <main className="flex-1 overflow-hidden relative">
-          {renderPage(currentPage)}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentPage}
+              initial={{ opacity: 0, y: 3 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -3 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="h-full w-full overflow-hidden"
+            >
+              <ErrorBoundary fallbackTitle="Workstation Module Exception">
+                <Suspense fallback={<PageLoadingSkeleton page={currentPage} />}>
+                  {renderPage(currentPage)}
+                </Suspense>
+              </ErrorBoundary>
+            </motion.div>
+          </AnimatePresence>
         </main>
 
         {/* Collapsible Deep Inspector Floating Sheet */}

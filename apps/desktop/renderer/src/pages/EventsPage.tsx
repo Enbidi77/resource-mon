@@ -9,6 +9,7 @@ import {
   GlassInput,
   GlassSegmentedControl,
   GlassTableContainer,
+  PageLoadingSkeleton,
 } from "../components/glass";
 
 export const EventsPage: React.FC = () => {
@@ -17,7 +18,7 @@ export const EventsPage: React.FC = () => {
     "System",
   );
   const [events, setEvents] = useState<WindowsEventLogEntry[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
   const fetchEvents = async () => {
@@ -43,6 +44,10 @@ export const EventsPage: React.FC = () => {
       e.source.toLowerCase().includes(search.toLowerCase()) ||
       String(e.eventId).includes(search),
   );
+
+  if (loading && events.length === 0) {
+    return <PageLoadingSkeleton page="events" />;
+  }
 
   return (
     <div className="p-6 space-y-4 h-full flex flex-col select-none">

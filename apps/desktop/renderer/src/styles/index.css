@@ -294,3 +294,44 @@
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.32);
 }
+
+/* Apple Glass Shimmer Skeleton Animations */
+@keyframes glass-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.glass-skeleton {
+  background: var(--glass-surface-subtle);
+  border: 1px solid var(--glass-border-subtle);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%
+  );
+  animation: glass-shimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.light .glass-skeleton::after,
+[data-theme="light"] .glass-skeleton::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+}

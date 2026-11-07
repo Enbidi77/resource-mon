@@ -25,6 +25,7 @@ import {
   GlassBadge,
   GlassButton,
   GlassSurface,
+  PageLoadingSkeleton,
 } from "../components/glass";
 
 export const StoragePage: React.FC = () => {
@@ -102,6 +103,10 @@ export const StoragePage: React.FC = () => {
     const fromHistory = history.map((h) => h.diskWriteKb * 1024);
     return Math.max(current?.diskWriteBytesPerSec || 0, ...fromHistory, 1024);
   }, [history, current]);
+
+  if (loading && !hardware) {
+    return <PageLoadingSkeleton page="storage" />;
+  }
 
   return (
     <div className="p-6 space-y-6 overflow-y-auto h-full select-none">

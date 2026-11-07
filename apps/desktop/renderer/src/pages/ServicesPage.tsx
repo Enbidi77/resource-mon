@@ -7,12 +7,13 @@ import {
   GlassButton,
   GlassInput,
   GlassTableContainer,
+  PageLoadingSkeleton,
 } from "../components/glass";
 
 export const ServicesPage: React.FC = () => {
   const { addToast } = useAppStore();
   const [services, setServices] = useState<WindowsService[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
 
@@ -76,6 +77,10 @@ export const ServicesPage: React.FC = () => {
       (s.description &&
         s.description.toLowerCase().includes(search.toLowerCase())),
   );
+
+  if (loading && services.length === 0) {
+    return <PageLoadingSkeleton page="services" />;
+  }
 
   return (
     <div className="p-6 space-y-4 h-full flex flex-col select-none">

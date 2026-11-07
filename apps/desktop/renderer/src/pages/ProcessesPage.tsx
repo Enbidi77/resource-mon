@@ -15,12 +15,13 @@ import {
   GlassButton,
   GlassInput,
   GlassTableContainer,
+  PageLoadingSkeleton,
 } from "../components/glass";
 
 export const ProcessesPage: React.FC = () => {
   const { setSelectedProcess, addToast } = useAppStore();
   const [processes, setProcesses] = useState<ProcessInfo[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<
     "cpuPercent" | "memoryBytes" | "pid" | "name"
@@ -72,6 +73,10 @@ export const ProcessesPage: React.FC = () => {
         ? (valA as number) - (valB as number)
         : (valB as number) - (valA as number);
     });
+
+  if (loading && processes.length === 0) {
+    return <PageLoadingSkeleton page="processes" />;
+  }
 
   return (
     <div className="p-6 space-y-4 h-full flex flex-col select-none">

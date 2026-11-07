@@ -1,3 +1,4 @@
+import React, { startTransition } from "react";
 import { create } from "zustand";
 import type {
   SystemOverview,
@@ -91,7 +92,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   searchQuery: "",
   toasts: [],
 
-  setCurrentPage: (page) => set({ currentPage: page }),
+  setCurrentPage: (page) => {
+    startTransition(() => {
+      set({ currentPage: page });
+    });
+  },
   setTheme: (theme) => {
     if (get().theme === theme) return;
     if (typeof window !== "undefined" && window.localStorage) {

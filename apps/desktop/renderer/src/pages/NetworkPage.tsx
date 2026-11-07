@@ -9,13 +9,14 @@ import {
   GlassCard,
   GlassInput,
   GlassTableContainer,
+  PageLoadingSkeleton,
 } from "../components/glass";
 
 export const NetworkPage: React.FC = () => {
   const { setSelectedConnection, addToast } = useAppStore();
   const [connections, setConnections] = useState<NetworkConnection[]>([]);
   const [interfaces, setInterfaces] = useState<NetworkInterface[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
   const fetchNetworkData = async () => {
@@ -52,6 +53,10 @@ export const NetworkPage: React.FC = () => {
         c.processName.toLowerCase().includes(search.toLowerCase())) ||
       String(c.pid).includes(search),
   );
+
+  if (loading && connections.length === 0) {
+    return <PageLoadingSkeleton page="network" />;
+  }
 
   return (
     <div className="p-6 space-y-5 h-full flex flex-col select-none">
