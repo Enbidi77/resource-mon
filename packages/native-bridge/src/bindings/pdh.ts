@@ -5,6 +5,8 @@ import { defaultLogger } from "@sentinel/logger";
 export interface Win32DiskIo {
   readBytesPerSec: number;
   writeBytesPerSec: number;
+  processesCount?: number;
+  activeSocketsCount?: number;
 }
 
 let cachedPdhCounterValueStruct: any = null;
@@ -28,6 +30,8 @@ export class PdhBridge implements Disposable, AsyncDisposable {
   private hQuery: bigint[] = [0n];
   private hReadCounter: bigint[] = [0n];
   private hWriteCounter: bigint[] = [0n];
+  private hProcessCounter: bigint[] = [0n];
+  private hTcpCounter: bigint[] = [0n];
   private isInitialized = false;
 
   constructor() {
@@ -139,6 +143,28 @@ export class PdhBridge implements Disposable, AsyncDisposable {
         );
 
         if (readStatus === 0 && writeStatus === 0) {
+          // Attach real-time zero-allocation system processes and TCP sockets performance counters
+          try {
+            this.PdhAddEnglishCounterWFn(
+              this.hQuery[0],
+              "\\System\\Processes",
+              0n,
+              this.hProcessCounter,
+            );
+          } catch {
+            // Gracefully ignore if counter is unsupported
+          }
+          try {
+            this.PdhAddEnglishCounterWFn(
+              this.hQuery[0],
+              "\\TCPv4\\Connections Established",
+              0n,
+              this.hTcpCounter,
+            );
+          } catch {
+            // Gracefully ignore if counter is unsupported
+          }
+
           // Prime query data for delta calculations
           this.PdhCollectQueryDataFn(this.hQuery[0]);
           this.isInitialized = true;
@@ -177,10 +203,12 @@ export class PdhBridge implements Disposable, AsyncDisposable {
 
       const valRead = { CStatus: 0, doubleValue: 0.0 };
       const valWrite = { CStatus: 0, doubleValue: 0.0 };
+      const valProc = { CStatus: 0, doubleValue: 0.0 };
+      const valTcp = { CStatus: 0, doubleValue: 0.0 };
       const dummyType = [0];
 
       // 0x00000200 = PDH_FMT_DOUBLE
-      const [rStatus, wStatus] = await Promise.all([
+      const tasks: Promise<any>[] = [
         this.PdhGetFormattedCounterValueAsync(
           this.hReadCounter[0],
           0x00000200,
@@ -193,7 +221,32 @@ export class PdhBridge implements Disposable, AsyncDisposable {
           dummyType,
           valWrite,
         ),
-      ]);
+      ];
+
+      if (this.hProcessCounter[0]) {
+        tasks.push(
+          this.PdhGetFormattedCounterValueAsync(
+            this.hProcessCounter[0],
+            0x00000200,
+            dummyType,
+            valProc,
+          ),
+        );
+      }
+      if (this.hTcpCounter[0]) {
+        tasks.push(
+          this.PdhGetFormattedCounterValueAsync(
+            this.hTcpCounter[0],
+            0x00000200,
+            dummyType,
+            valTcp,
+          ),
+        );
+      }
+
+      const results = await Promise.all(tasks);
+      const rStatus = results[0];
+      const wStatus = results[1];
 
       const readBytes =
         rStatus === 0 && valRead.CStatus === 0
@@ -204,9 +257,20 @@ export class PdhBridge implements Disposable, AsyncDisposable {
           ? Math.max(0, Math.round(valWrite.doubleValue || 0))
           : 0;
 
+      const procCount =
+        this.hProcessCounter[0] && valProc.CStatus === 0
+          ? Math.max(0, Math.round(valProc.doubleValue || 0))
+          : undefined;
+      const tcpCount =
+        this.hTcpCounter[0] && valTcp.CStatus === 0
+          ? Math.max(0, Math.round(valTcp.doubleValue || 0))
+          : undefined;
+
       return {
         readBytesPerSec: readBytes,
         writeBytesPerSec: writeBytes,
+        processesCount: procCount,
+        activeSocketsCount: tcpCount,
       };
     } catch (err) {
       defaultLogger.debug(
@@ -233,6 +297,8 @@ export class PdhBridge implements Disposable, AsyncDisposable {
 
       const valRead = { CStatus: 0, doubleValue: 0.0 };
       const valWrite = { CStatus: 0, doubleValue: 0.0 };
+      const valProc = { CStatus: 0, doubleValue: 0.0 };
+      const valTcp = { CStatus: 0, doubleValue: 0.0 };
       const dummyType = [0];
 
       // 0x00000200 = PDH_FMT_DOUBLE
@@ -249,6 +315,32 @@ export class PdhBridge implements Disposable, AsyncDisposable {
         valWrite,
       );
 
+      let procCount: number | undefined;
+      if (this.hProcessCounter[0]) {
+        const pStatus = this.PdhGetFormattedCounterValueFn(
+          this.hProcessCounter[0],
+          0x00000200,
+          dummyType,
+          valProc,
+        );
+        if (pStatus === 0 && valProc.CStatus === 0) {
+          procCount = Math.max(0, Math.round(valProc.doubleValue || 0));
+        }
+      }
+
+      let tcpCount: number | undefined;
+      if (this.hTcpCounter[0]) {
+        const tStatus = this.PdhGetFormattedCounterValueFn(
+          this.hTcpCounter[0],
+          0x00000200,
+          dummyType,
+          valTcp,
+        );
+        if (tStatus === 0 && valTcp.CStatus === 0) {
+          tcpCount = Math.max(0, Math.round(valTcp.doubleValue || 0));
+        }
+      }
+
       const readBytes =
         rStatus === 0 && valRead.CStatus === 0
           ? Math.max(0, Math.round(valRead.doubleValue || 0))
@@ -261,6 +353,8 @@ export class PdhBridge implements Disposable, AsyncDisposable {
       return {
         readBytesPerSec: readBytes,
         writeBytesPerSec: writeBytes,
+        processesCount: procCount,
+        activeSocketsCount: tcpCount,
       };
     } catch (err) {
       defaultLogger.debug({ err }, "Error sampling PDH disk I/O synchronously");

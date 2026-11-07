@@ -7,6 +7,11 @@ import { defaultLogger } from "@sentinel/logger";
 export class WindowManager {
   private mainWindow: BrowserWindow | null = null;
   private compactWindow: BrowserWindow | null = null;
+  private onMemoryTrimNeeded: (() => void) | null = null;
+
+  public setMemoryTrimHandler(handler: () => void): void {
+    this.onMemoryTrimNeeded = handler;
+  }
 
   public resolveAppIconPath(): string | undefined {
     const icoCandidates = [
@@ -42,7 +47,9 @@ export class WindowManager {
     }
 
     const iconPath = this.resolveAppIconPath();
-    const iconImage = iconPath ? nativeImage.createFromPath(iconPath) : undefined;
+    const iconImage = iconPath
+      ? nativeImage.createFromPath(iconPath)
+      : undefined;
 
     this.mainWindow = new BrowserWindow({
       width: 1360,
@@ -84,6 +91,10 @@ export class WindowManager {
       this.mainWindow?.show();
     });
 
+    this.mainWindow.on("minimize", () => {
+      this.onMemoryTrimNeeded?.();
+    });
+
     // Handle external link clicks safely in system browser
     this.mainWindow.webContents.setWindowOpenHandler((details) => {
       shell.openExternal(details.url);
@@ -101,7 +112,9 @@ export class WindowManager {
   }
 
   public getMainWindow(): BrowserWindow | null {
-    return this.mainWindow && !this.mainWindow.isDestroyed() ? this.mainWindow : null;
+    return this.mainWindow && !this.mainWindow.isDestroyed()
+      ? this.mainWindow
+      : null;
   }
 
   public createCompactWindow(theme?: "dark" | "light"): BrowserWindow {
@@ -112,7 +125,9 @@ export class WindowManager {
     }
 
     const iconPath = this.resolveAppIconPath();
-    const iconImage = iconPath ? nativeImage.createFromPath(iconPath) : undefined;
+    const iconImage = iconPath
+      ? nativeImage.createFromPath(iconPath)
+      : undefined;
 
     this.compactWindow = new BrowserWindow({
       width: 380,
@@ -144,7 +159,10 @@ export class WindowManager {
       try {
         this.compactWindow.setIcon(iconPath);
       } catch (e) {
-        defaultLogger.warn({ err: e }, "Failed to explicitly set compact window icon");
+        defaultLogger.warn(
+          { err: e },
+          "Failed to explicitly set compact window icon",
+        );
       }
     }
 
@@ -154,6 +172,10 @@ export class WindowManager {
       if (theme) {
         this.compactWindow?.webContents.send(IPC_CHANNELS.THEME_STREAM, theme);
       }
+    });
+
+    this.compactWindow.on("minimize", () => {
+      this.onMemoryTrimNeeded?.();
     });
 
     this.compactWindow.on("closed", () => {
@@ -166,7 +188,9 @@ export class WindowManager {
     });
 
     if (process.env["ELECTRON_RENDERER_URL"]) {
-      this.compactWindow.loadURL(`${process.env["ELECTRON_RENDERER_URL"]}#compact`);
+      this.compactWindow.loadURL(
+        `${process.env["ELECTRON_RENDERER_URL"]}#compact`,
+      );
     } else {
       this.compactWindow.loadFile(join(__dirname, "../renderer/index.html"), {
         hash: "compact",
@@ -177,16 +201,22 @@ export class WindowManager {
   }
 
   public getCompactWindow(): BrowserWindow | null {
-    return this.compactWindow && !this.compactWindow.isDestroyed() ? this.compactWindow : null;
+    return this.compactWindow && !this.compactWindow.isDestroyed()
+      ? this.compactWindow
+      : null;
   }
 
   public minimize(webContents?: Electron.WebContents): void {
-    const win = (webContents ? BrowserWindow.fromWebContents(webContents) : null) || this.mainWindow;
+    const win =
+      (webContents ? BrowserWindow.fromWebContents(webContents) : null) ||
+      this.mainWindow;
     win?.minimize();
   }
 
   public toggleMaximize(webContents?: Electron.WebContents): boolean {
-    const win = (webContents ? BrowserWindow.fromWebContents(webContents) : null) || this.mainWindow;
+    const win =
+      (webContents ? BrowserWindow.fromWebContents(webContents) : null) ||
+      this.mainWindow;
     if (win?.isMaximized()) {
       win.unmaximize();
       return false;
@@ -197,12 +227,16 @@ export class WindowManager {
   }
 
   public close(webContents?: Electron.WebContents): void {
-    const win = (webContents ? BrowserWindow.fromWebContents(webContents) : null) || this.mainWindow;
+    const win =
+      (webContents ? BrowserWindow.fromWebContents(webContents) : null) ||
+      this.mainWindow;
     win?.close();
   }
 
   public isMaximized(webContents?: Electron.WebContents): boolean {
-    const win = (webContents ? BrowserWindow.fromWebContents(webContents) : null) || this.mainWindow;
+    const win =
+      (webContents ? BrowserWindow.fromWebContents(webContents) : null) ||
+      this.mainWindow;
     return win?.isMaximized() || false;
   }
 
@@ -239,8 +273,8 @@ export class WindowManager {
   public isCompactWindowOpen(): boolean {
     return Boolean(
       this.compactWindow &&
-        !this.compactWindow.isDestroyed() &&
-        this.compactWindow.isVisible()
+      !this.compactWindow.isDestroyed() &&
+      this.compactWindow.isVisible(),
     );
   }
 
@@ -248,7 +282,7 @@ export class WindowManager {
     if (this.compactWindow && !this.compactWindow.isDestroyed()) {
       this.compactWindow.setAlwaysOnTop(
         alwaysOnTop,
-        alwaysOnTop ? "screen-saver" : "normal"
+        alwaysOnTop ? "screen-saver" : "normal",
       );
       return alwaysOnTop;
     }
@@ -300,4 +334,3 @@ export class WindowManager {
     }
   }
 }
-

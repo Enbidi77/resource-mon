@@ -31,6 +31,7 @@ export const IPC_CHANNELS = {
   SYSTEM_GET_METRICS: "sentinel:system:get-metrics",
   SYSTEM_STREAM_METRICS: "sentinel:stream:system-metrics",
   SYSTEM_TOGGLE_STREAM: "sentinel:stream:toggle-metrics",
+  SYSTEM_TRIM_MEMORY: "sentinel:system:trim-memory",
 
   // Process Management
   PROCESS_LIST: "sentinel:processes:list",
@@ -110,6 +111,7 @@ export interface ISentinelAPI {
     enabled: boolean,
     intervalMs?: number,
   ) => Promise<boolean>;
+  trimMemory: () => Promise<{ success: boolean; memory?: unknown }>;
 
   // Processes
   listProcesses: () => Promise<ProcessInfo[]>;

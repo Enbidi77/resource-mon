@@ -81,11 +81,21 @@ export const App: React.FC = () => {
       const handleResize = () => {
         window.sentinelAPI?.isWindowMaximized().then(setIsMaximized);
       };
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "hidden") {
+          window.sentinelAPI?.trimMemory();
+        }
+      };
       window.addEventListener("resize", handleResize);
+      document.addEventListener("visibilitychange", handleVisibilityChange);
 
       return () => {
         unsubscribe();
         window.removeEventListener("resize", handleResize);
+        document.removeEventListener(
+          "visibilitychange",
+          handleVisibilityChange,
+        );
       };
     }
   }, [setOverview, setCurrentMetrics, setIsMaximized]);

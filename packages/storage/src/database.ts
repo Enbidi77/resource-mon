@@ -94,7 +94,7 @@ export class SentinelDatabase implements Disposable, AsyncDisposable {
     };
 
     this.inMemoryMetrics.push(record);
-    if (this.inMemoryMetrics.length > 500) {
+    if (this.inMemoryMetrics.length > 120) {
       this.inMemoryMetrics.shift();
     }
 

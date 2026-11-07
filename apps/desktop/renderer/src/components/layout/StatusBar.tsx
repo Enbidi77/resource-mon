@@ -1,5 +1,5 @@
 import React from "react";
-import { Play, Pause, Clock } from "lucide-react";
+import { Play, Pause, Clock, Sparkles } from "lucide-react";
 import { useMetricsStore } from "../../stores/useMetricsStore";
 import { useAppStore } from "../../stores/useAppStore";
 import {
@@ -9,9 +9,15 @@ import {
 } from "@sentinel/shared";
 
 export const StatusBar: React.FC = () => {
-  const { current, isStreaming, setIsStreaming, intervalMs, setIntervalMs } =
-    useMetricsStore();
-  const { overview } = useAppStore();
+  const {
+    current,
+    isStreaming,
+    setIsStreaming,
+    intervalMs,
+    setIntervalMs,
+    optimizeMemory,
+  } = useMetricsStore();
+  const { overview, addToast } = useAppStore();
 
   return (
     <footer className="h-8 w-full bg-white/70 dark:bg-black/25 backdrop-blur-3xl backdrop-saturate-200 border-t border-black/8 dark:border-white/10 flex items-center justify-between px-3 text-[11px] text-slate-600 dark:text-white/60 font-mono select-none z-40 shadow-sm">
@@ -89,6 +95,22 @@ export const StatusBar: React.FC = () => {
               {formatBytes(current.memoryUsedBytes)} /{" "}
               {formatBytes(current.memoryTotalBytes)}
             </span>
+            <button
+              onClick={async () => {
+                const ok = await optimizeMemory();
+                addToast({
+                  type: ok ? "success" : "info",
+                  message: ok
+                    ? "Working set trimmed & physical RAM reclaimed"
+                    : "RAM optimization cycle finished",
+                });
+              }}
+              title="Trim working set and force garbage collection"
+              className="ml-1 flex items-center gap-1 text-[10px] text-purple-700 dark:text-purple-300 hover:text-purple-900 dark:hover:text-purple-100 bg-purple-500/10 hover:bg-purple-500/20 px-1.5 py-0.5 rounded border border-purple-500/20 transition-all cursor-pointer"
+            >
+              <Sparkles className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" />
+              <span>Trim</span>
+            </button>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-slate-400 dark:text-white/40">

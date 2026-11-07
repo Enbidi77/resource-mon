@@ -116,7 +116,7 @@ export class WindowsSystemAdapter
 
   private updateNetworkStatsInBackground(): void {
     const now = Date.now();
-    if (this.isFetchingNet || now - this.lastNetFetchTime < 350) {
+    if (this.isFetchingNet || now - this.lastNetFetchTime < 1000) {
       return;
     }
     this.isFetchingNet = true;
@@ -142,9 +142,10 @@ export class WindowsSystemAdapter
 
   private updateProcessCountsInBackground(): void {
     const now = Date.now();
+    // Throttle fallback queries to 20 seconds to prevent heap churn & CPU spikes
     if (
       this.isFetchingProcCounts ||
-      (this.cachedProcessesCount > 0 && now - this.lastProcFetchTime < 2500)
+      (this.cachedProcessesCount > 0 && now - this.lastProcFetchTime < 20000)
     ) {
       return;
     }
@@ -252,17 +253,31 @@ export class WindowsSystemAdapter
   public async getMetricsSnapshot(): Promise<SystemMetricsSnapshot> {
     const timestamp = Date.now();
 
-    // Trigger non-blocking background telemetry updates
-    this.updateGpuMetricsInBackground();
-    this.updateNetworkStatsInBackground();
-    this.updateProcessCountsInBackground();
-
     // Parallel ultra-fast Win32 C FFI queries (< 1ms total)
     const [nativeMem, nativeCpu, diskIo] = await Promise.all([
       this.kernel32.getMemoryStatus(),
       this.kernel32.calculateCpuUsagePercent(),
       this.pdh.getDiskIo(),
     ]);
+
+    // Use zero-allocation native PDH counts if available from pdh.dll
+    if (diskIo.processesCount !== undefined) {
+      this.cachedProcessesCount = diskIo.processesCount;
+    }
+    if (diskIo.activeSocketsCount !== undefined) {
+      this.cachedSocketsCount = diskIo.activeSocketsCount;
+    }
+
+    // Trigger non-blocking background telemetry updates
+    this.updateGpuMetricsInBackground();
+    this.updateNetworkStatsInBackground();
+    // Only invoke heavy systeminformation process enumeration if native PDH counter was unavailable
+    if (
+      diskIo.processesCount === undefined ||
+      diskIo.activeSocketsCount === undefined
+    ) {
+      this.updateProcessCountsInBackground();
+    }
 
     // Fast per-core load calculation using os.cpus() (1-2ms)
     const cpuTotal = nativeCpu;
@@ -330,7 +345,11 @@ export class WindowsSystemAdapter
           memoryWorkingSetBytes: (p.memRss || 0) * 1024,
           memoryPercent: Math.round(p.mem * 10) / 10,
           executablePath: p.path || null,
-          commandLine: p.command || null,
+          commandLine: p.command
+            ? p.command.length > 512
+              ? `${p.command.slice(0, 512)}...`
+              : p.command
+            : null,
           user: p.user || null,
           startTime: p.started || null,
           status: p.state || "running",
@@ -403,7 +422,8 @@ export class WindowsSystemAdapter
   public async getNetworkConnections(): Promise<NetworkConnection[]> {
     try {
       const conns = await si.networkConnections();
-      return conns.map((c, idx) => ({
+      const list = Array.isArray(conns) ? conns.slice(0, 500) : [];
+      return list.map((c, idx) => ({
         id: `conn-${idx}-${c.pid}-${c.localPort}-${c.peerPort}`,
         protocol: (c.protocol || "TCP").toUpperCase() as "TCP" | "UDP",
         localAddress: c.localAddress || "0.0.0.0",
@@ -650,6 +670,13 @@ export class WindowsSystemAdapter
     })();
 
     return this.hardwareSummaryPromise;
+  }
+
+  /**
+   * Deterministically trims unused physical RAM pages from the working set
+   */
+  public trimWorkingSet(): boolean {
+    return this.kernel32.trimWorkingSet();
   }
 
   /**

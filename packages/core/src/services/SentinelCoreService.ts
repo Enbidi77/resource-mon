@@ -249,6 +249,23 @@ export class SentinelCoreService implements Disposable, AsyncDisposable {
     }
   }
 
+  public trimMemory(): { success: boolean; memory: NodeJS.MemoryUsage } {
+    if (typeof global !== "undefined" && (global as any).gc) {
+      try {
+        (global as any).gc();
+      } catch {}
+    }
+    const success = this.kernel32.trimWorkingSet();
+    defaultLogger.info(
+      { success, memory: process.memoryUsage() },
+      "Executed process working set and heap memory trim",
+    );
+    return {
+      success,
+      memory: process.memoryUsage(),
+    };
+  }
+
   /**
    * Synchronously terminates collectors, flushes the SQLite/WAL database,
    * and disposes underlying system adapter handles.

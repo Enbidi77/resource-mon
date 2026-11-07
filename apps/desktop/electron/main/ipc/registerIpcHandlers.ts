@@ -57,7 +57,7 @@ export function registerIpcHandlers({
     IPC_CHANNELS.COMPACT_WINDOW_SET_ALWAYS_ON_TOP,
     (_e, alwaysOnTop: boolean) => {
       return windowManager.setCompactAlwaysOnTop(alwaysOnTop);
-    }
+    },
   );
 
   ipcMain.handle(IPC_CHANNELS.COMPACT_WINDOW_GET_ALWAYS_ON_TOP, () => {
@@ -68,7 +68,7 @@ export function registerIpcHandlers({
     IPC_CHANNELS.COMPACT_WINDOW_SET_CLICK_THROUGH,
     (_e, clickThrough: boolean) => {
       windowManager.setCompactClickThrough(clickThrough);
-    }
+    },
   );
 
   // Theme Synchronization Across Windows
@@ -93,8 +93,12 @@ export function registerIpcHandlers({
     IPC_CHANNELS.SYSTEM_TOGGLE_STREAM,
     (_e, enabled: boolean, intervalMs?: number) => {
       return coreService.toggleMetricsStream(enabled, intervalMs);
-    }
+    },
   );
+
+  ipcMain.handle(IPC_CHANNELS.SYSTEM_TRIM_MEMORY, () => {
+    return coreService.trimMemory();
+  });
 
   // Stream live metrics updates to all active workstation windows
   coreService.onSystemMetrics((snapshot) => {
@@ -118,14 +122,14 @@ export function registerIpcHandlers({
     IPC_CHANNELS.PROCESS_VERIFY_SIGNATURE,
     async (_e, filePath: string) => {
       return coreService.verifyProcessSignature(filePath);
-    }
+    },
   );
 
   ipcMain.handle(
     IPC_CHANNELS.PROCESS_COMPUTE_HASH,
     async (_e, filePath: string) => {
       return coreService.computeProcessHash(filePath);
-    }
+    },
   );
 
   // Network Handlers
@@ -159,14 +163,14 @@ export function registerIpcHandlers({
     IPC_CHANNELS.SECURITY_RUN_FIM_SCAN,
     async (_e, dir?: string) => {
       return coreService.runFimScan(dir);
-    }
+    },
   );
 
   ipcMain.handle(
     IPC_CHANNELS.SECURITY_DISMISS_ALERT,
     async (_e, alertId: string) => {
       return coreService.dismissAlert(alertId);
-    }
+    },
   );
 
   ipcMain.handle(IPC_CHANNELS.SECURITY_RUN_AUDIT, async () => {
@@ -177,7 +181,7 @@ export function registerIpcHandlers({
     IPC_CHANNELS.SECURITY_ANALYZE_BINARY,
     async (_e, target: { filePath?: string; pid?: number }) => {
       return coreService.analyzeBinary(target);
-    }
+    },
   );
 
   // Event Log Reader Handlers
@@ -195,4 +199,3 @@ export function registerIpcHandlers({
     return coreService.generateReport(config);
   });
 }
-

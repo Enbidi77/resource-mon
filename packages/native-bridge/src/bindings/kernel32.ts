@@ -1,6 +1,6 @@
-import koffi from 'koffi';
-import { NativeLibraryLoader, promisifyKoffi } from '../koffi/loader.js';
-import { defaultLogger } from '@sentinel/logger';
+import koffi from "koffi";
+import { NativeLibraryLoader, promisifyKoffi } from "../koffi/loader.js";
+import { defaultLogger } from "@sentinel/logger";
 
 export interface Win32MemoryStatus {
   loadPercent: number;
@@ -31,6 +31,8 @@ export class Kernel32Bridge {
   private OpenProcessFn: any = null;
   private TerminateProcessFn: any = null;
   private CloseHandleFn: any = null;
+  private GetCurrentProcessFn: any = null;
+  private SetProcessWorkingSetSizeFn: any = null;
 
   // Promisified asynchronous handles
   private GetSystemTimesAsync: any = null;
@@ -44,14 +46,15 @@ export class Kernel32Bridge {
   private fileTimeStruct: any = null;
 
   // Previous CPU times for delta calculation
-  private prevTimes: { idle: bigint; kernel: bigint; user: bigint } | null = null;
+  private prevTimes: { idle: bigint; kernel: bigint; user: bigint } | null =
+    null;
   private lastCpuPercent = 0;
 
   constructor() {
     const loader = NativeLibraryLoader.getInstance();
     if (!loader.isAvailable()) return;
 
-    this.k32 = loader.getLib('kernel32.dll');
+    this.k32 = loader.getLib("kernel32.dll");
     if (!this.k32) return;
 
     try {
@@ -61,9 +64,9 @@ export class Kernel32Bridge {
          * Represents a 64-bit value representing the number of 100-nanosecond intervals
          * since January 1, 1601 (UTC). Used by GetSystemTimes for CPU timing deltas.
          */
-        cachedFileTimeStruct = koffi.struct('FILETIME', {
-          dwLowDateTime: 'uint32',
-          dwHighDateTime: 'uint32',
+        cachedFileTimeStruct = koffi.struct("FILETIME", {
+          dwLowDateTime: "uint32",
+          dwHighDateTime: "uint32",
         });
       }
       this.fileTimeStruct = cachedFileTimeStruct;
@@ -74,16 +77,16 @@ export class Kernel32Bridge {
          * Contains comprehensive information about both physical and virtual memory,
          * page file limits, and current memory load percentage (0-100).
          */
-        cachedMemoryStatusExStruct = koffi.struct('MEMORYSTATUSEX', {
-          dwLength: 'uint32',
-          dwMemoryLoad: 'uint32',
-          ullTotalPhys: 'uint64',
-          ullAvailPhys: 'uint64',
-          ullTotalPageFile: 'uint64',
-          ullAvailPageFile: 'uint64',
-          ullTotalVirtual: 'uint64',
-          ullAvailVirtual: 'uint64',
-          ullAvailExtendedVirtual: 'uint64',
+        cachedMemoryStatusExStruct = koffi.struct("MEMORYSTATUSEX", {
+          dwLength: "uint32",
+          dwMemoryLoad: "uint32",
+          ullTotalPhys: "uint64",
+          ullAvailPhys: "uint64",
+          ullTotalPageFile: "uint64",
+          ullAvailPageFile: "uint64",
+          ullTotalVirtual: "uint64",
+          ullAvailVirtual: "uint64",
+          ullAvailExtendedVirtual: "uint64",
         });
       }
       this.memoryStatusExStruct = cachedMemoryStatusExStruct;
@@ -97,7 +100,7 @@ export class Kernel32Bridge {
        * Used to calculate host CPU usage percentage: ((kernelDelta + userDelta - idleDelta) / (kernelDelta + userDelta)).
        */
       this.GetSystemTimesFn = this.k32.func(
-        'bool __stdcall GetSystemTimes(_Out_ FILETIME* lpIdleTime, _Out_ FILETIME* lpKernelTime, _Out_ FILETIME* lpUserTime)'
+        "bool __stdcall GetSystemTimes(_Out_ FILETIME* lpIdleTime, _Out_ FILETIME* lpKernelTime, _Out_ FILETIME* lpUserTime)",
       );
 
       /**
@@ -108,7 +111,7 @@ export class Kernel32Bridge {
        * @returns Boolean true on success, false on failure.
        */
       this.GlobalMemoryStatusExFn = this.k32.func(
-        'bool __stdcall GlobalMemoryStatusEx(_Inout_ MEMORYSTATUSEX* lpBuffer)'
+        "bool __stdcall GlobalMemoryStatusEx(_Inout_ MEMORYSTATUSEX* lpBuffer)",
       );
 
       /**
@@ -118,7 +121,9 @@ export class Kernel32Bridge {
        * Converted to seconds to provide host system uptime.
        * @returns Milliseconds elapsed as a 64-bit unsigned integer.
        */
-      this.GetTickCount64Fn = this.k32.func('uint64 __stdcall GetTickCount64()');
+      this.GetTickCount64Fn = this.k32.func(
+        "uint64 __stdcall GetTickCount64()",
+      );
 
       /**
        * Win32 OpenProcess
@@ -129,7 +134,7 @@ export class Kernel32Bridge {
        * @returns Handle to process (intptr_t) or null/0 if access is denied.
        */
       this.OpenProcessFn = this.k32.func(
-        'intptr_t __stdcall OpenProcess(uint32 dwDesiredAccess, bool bInheritHandle, uint32 dwProcessId)'
+        "intptr_t __stdcall OpenProcess(uint32 dwDesiredAccess, bool bInheritHandle, uint32 dwProcessId)",
       );
 
       /**
@@ -140,7 +145,7 @@ export class Kernel32Bridge {
        * @returns Boolean true if termination succeeded, false otherwise.
        */
       this.TerminateProcessFn = this.k32.func(
-        'bool __stdcall TerminateProcess(intptr_t hProcess, uint32 uExitCode)'
+        "bool __stdcall TerminateProcess(intptr_t hProcess, uint32 uExitCode)",
       );
 
       /**
@@ -150,18 +155,44 @@ export class Kernel32Bridge {
        * @param hObject - Valid handle to an open object.
        * @returns Boolean true if successfully closed, false otherwise.
        */
-      this.CloseHandleFn = this.k32.func('bool __stdcall CloseHandle(intptr_t hObject)');
+      this.CloseHandleFn = this.k32.func(
+        "bool __stdcall CloseHandle(intptr_t hObject)",
+      );
+
+      /**
+       * Win32 GetCurrentProcess
+       * Retrieves a pseudo handle for the current process.
+       */
+      this.GetCurrentProcessFn = this.k32.func(
+        "intptr_t __stdcall GetCurrentProcess()",
+      );
+
+      /**
+       * Win32 SetProcessWorkingSetSize
+       * Sets the minimum and maximum working set sizes for the specified process.
+       * Passing (-1, -1) instructs Windows Virtual Memory Manager to immediately trim
+       * clean/unreferenced pages from the working set into the standby list, freeing physical RAM.
+       */
+      this.SetProcessWorkingSetSizeFn = this.k32.func(
+        "bool __stdcall SetProcessWorkingSetSize(intptr_t hProcess, size_t dwMinimumWorkingSetSize, size_t dwMaximumWorkingSetSize)",
+      );
 
       // Bind asynchronous non-blocking versions using Koffi's .async and libuv worker threads.
       // Calling these keeps the Node.js event loop free of blocking Win32 C execution.
       this.GetSystemTimesAsync = promisifyKoffi<boolean>(this.GetSystemTimesFn);
-      this.GlobalMemoryStatusExAsync = promisifyKoffi<boolean>(this.GlobalMemoryStatusExFn);
-      this.GetTickCount64Async = promisifyKoffi<bigint | number>(this.GetTickCount64Fn);
+      this.GlobalMemoryStatusExAsync = promisifyKoffi<boolean>(
+        this.GlobalMemoryStatusExFn,
+      );
+      this.GetTickCount64Async = promisifyKoffi<bigint | number>(
+        this.GetTickCount64Fn,
+      );
       this.OpenProcessAsync = promisifyKoffi<any>(this.OpenProcessFn);
-      this.TerminateProcessAsync = promisifyKoffi<boolean>(this.TerminateProcessFn);
+      this.TerminateProcessAsync = promisifyKoffi<boolean>(
+        this.TerminateProcessFn,
+      );
       this.CloseHandleAsync = promisifyKoffi<boolean>(this.CloseHandleFn);
     } catch (err) {
-      defaultLogger.warn({ err }, 'Failed to bind Kernel32 Win32 functions');
+      defaultLogger.warn({ err }, "Failed to bind Kernel32 Win32 functions");
     }
   }
 
@@ -187,7 +218,7 @@ export class Kernel32Bridge {
         availVirtualBytes: Number(mem.ullAvailVirtual),
       };
     } catch (err) {
-      defaultLogger.debug({ err }, 'Error in async GlobalMemoryStatusEx');
+      defaultLogger.debug({ err }, "Error in async GlobalMemoryStatusEx");
       return null;
     }
   }
@@ -209,7 +240,7 @@ export class Kernel32Bridge {
         availVirtualBytes: Number(mem.ullAvailVirtual),
       };
     } catch (err) {
-      defaultLogger.debug({ err }, 'Error in sync GlobalMemoryStatusEx');
+      defaultLogger.debug({ err }, "Error in sync GlobalMemoryStatusEx");
       return null;
     }
   }
@@ -319,7 +350,10 @@ export class Kernel32Bridge {
 
     // Kernel time includes idle time in Windows GetSystemTimes
     const busy = totalSystem - idleDelta;
-    const percent = Math.max(0, Math.min(100, Number((busy * 10000n) / totalSystem) / 100));
+    const percent = Math.max(
+      0,
+      Math.min(100, Number((busy * 10000n) / totalSystem) / 100),
+    );
     this.lastCpuPercent = percent;
     return percent;
   }
@@ -351,7 +385,10 @@ export class Kernel32Bridge {
     if (totalSystem <= 0n) return this.lastCpuPercent;
 
     const busy = totalSystem - idleDelta;
-    const percent = Math.max(0, Math.min(100, Number((busy * 10000n) / totalSystem) / 100));
+    const percent = Math.max(
+      0,
+      Math.min(100, Number((busy * 10000n) / totalSystem) / 100),
+    );
     this.lastCpuPercent = percent;
     return percent;
   }
@@ -359,8 +396,14 @@ export class Kernel32Bridge {
   /**
    * Non-blocking asynchronous termination of a target process
    */
-  public async terminateProcess(pid: number): Promise<{ success: boolean; error?: string }> {
-    if (!this.OpenProcessAsync || !this.TerminateProcessAsync || !this.CloseHandleAsync) {
+  public async terminateProcess(
+    pid: number,
+  ): Promise<{ success: boolean; error?: string }> {
+    if (
+      !this.OpenProcessAsync ||
+      !this.TerminateProcessAsync ||
+      !this.CloseHandleAsync
+    ) {
       return this.terminateProcessSync(pid);
     }
 
@@ -372,7 +415,10 @@ export class Kernel32Bridge {
         return { success: false, error: `Access Denied or invalid PID ${pid}` };
       }
       const ok = await this.TerminateProcessAsync(handle, 1);
-      return { success: Boolean(ok), error: ok ? undefined : 'TerminateProcess call failed' };
+      return {
+        success: Boolean(ok),
+        error: ok ? undefined : "TerminateProcess call failed",
+      };
     } catch (err: any) {
       return { success: false, error: err?.message || String(err) };
     } finally {
@@ -382,9 +428,16 @@ export class Kernel32Bridge {
     }
   }
 
-  public terminateProcessSync(pid: number): { success: boolean; error?: string } {
-    if (!this.OpenProcessFn || !this.TerminateProcessFn || !this.CloseHandleFn) {
-      return { success: false, error: 'Native Process API not available' };
+  public terminateProcessSync(pid: number): {
+    success: boolean;
+    error?: string;
+  } {
+    if (
+      !this.OpenProcessFn ||
+      !this.TerminateProcessFn ||
+      !this.CloseHandleFn
+    ) {
+      return { success: false, error: "Native Process API not available" };
     }
 
     const PROCESS_TERMINATE = 0x0001;
@@ -395,13 +448,34 @@ export class Kernel32Bridge {
         return { success: false, error: `Access Denied or invalid PID ${pid}` };
       }
       const ok = this.TerminateProcessFn(handle, 1);
-      return { success: Boolean(ok), error: ok ? undefined : 'TerminateProcess call failed' };
+      return {
+        success: Boolean(ok),
+        error: ok ? undefined : "TerminateProcess call failed",
+      };
     } catch (err: any) {
       return { success: false, error: err?.message || String(err) };
     } finally {
       if (handle && handle !== 0n && handle !== 0) {
         this.CloseHandleFn(handle);
       }
+    }
+  }
+
+  /**
+   * Deterministically trims unused physical RAM pages from the current process's
+   * working set back to the host operating system's standby pool.
+   * Calling SetProcessWorkingSetSize with (-1, -1) instructs Windows Virtual Memory Manager
+   * to immediately trim clean pages, reducing physical RAM usage (often by 70-90%).
+   */
+  public trimWorkingSet(): boolean {
+    if (!this.SetProcessWorkingSetSizeFn || !this.GetCurrentProcessFn)
+      return false;
+    try {
+      const handle = this.GetCurrentProcessFn();
+      return Boolean(this.SetProcessWorkingSetSizeFn(handle, -1, -1));
+    } catch (err) {
+      defaultLogger.debug({ err }, "Error trimming process working set");
+      return false;
     }
   }
 }

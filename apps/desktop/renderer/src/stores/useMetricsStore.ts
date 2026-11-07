@@ -21,6 +21,7 @@ interface MetricsState {
   setCurrentMetrics: (snapshot: SystemMetricsSnapshot) => void;
   setIsStreaming: (streaming: boolean) => void;
   setIntervalMs: (ms: number) => void;
+  optimizeMemory: () => Promise<boolean>;
 }
 
 export const useMetricsStore = create<MetricsState>((set, get) => ({
@@ -56,8 +57,11 @@ export const useMetricsStore = create<MetricsState>((set, get) => ({
     };
 
     set((state) => {
-      // Dynamic history capacity ensures ~30s rolling time window regardless of polling rate
-      const dynamicLimit = Math.max(30, Math.round(30000 / state.intervalMs));
+      // Dynamic history capacity ensures ~30s rolling time window capped to 60 points max
+      const dynamicLimit = Math.min(
+        60,
+        Math.max(30, Math.round(30000 / state.intervalMs)),
+      );
       const updated = [...state.history, newPoint];
       if (updated.length > dynamicLimit) {
         updated.splice(0, updated.length - dynamicLimit);
@@ -81,5 +85,17 @@ export const useMetricsStore = create<MetricsState>((set, get) => ({
     if (window.sentinelAPI) {
       window.sentinelAPI.toggleMetricsStream(get().isStreaming, ms);
     }
+  },
+
+  optimizeMemory: async () => {
+    if (window.sentinelAPI?.trimMemory) {
+      try {
+        const res = await window.sentinelAPI.trimMemory();
+        return Boolean(res?.success);
+      } catch {
+        return false;
+      }
+    }
+    return false;
   },
 }));
